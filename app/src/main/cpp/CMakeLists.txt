@@ -33,9 +33,16 @@ add_definitions(-DASSIMP_ANDROID_JNIIOSYSTEM=ON)
 add_definitions(-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_PATH}/android.toolchain.cmake)
 # link_directories(prebuilt/assimp)
 # link_directories(prebuilt/assimp_io)
-add_subdirectory(lib/assimp-master assimp)
+# add_subdirectory(lib/assimp-master assimp)
 
 # add_subdirectory(lib/assimp/port/AndroidJNI android_jniiosystem)
+
+set(distribution_DIR ${CMAKE_SOURCE_DIR}/../../../libs)
+add_library(assimp SHARED IMPORTED)
+set_target_properties(assimp PROPERTIES IMPORTED_LOCATION ${distribution_DIR}/assimp/${ANDROID_ABI}/libassimp.so)
+
+add_library(android_jniiosystem STATIC IMPORTED)
+set_target_properties(android_jniiosystem PROPERTIES IMPORTED_LOCATION ${distribution_DIR}/assimp/${ANDROID_ABI}/libandroid_jniiosystem.a)
 
 # Export ANativeActivity_onCreate(), 
 # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -85,4 +92,5 @@ target_link_libraries(
                        EGL
                        GLESv2
                        assimp
+                       android_jniiosystem
                        ${log-lib} )

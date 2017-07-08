@@ -31,6 +31,12 @@ void android_main(android_app* state) {
 
     LOGI("Vulkan has been successfully initialized");
 
+#ifdef __ANDROID__
+    LOGI("_ANDROID FOUND");
+#else
+    LOGI("_ANDROID NOT FOUND");
+#endif
+
 #ifdef USE_NDK_PROFILER
     //monstartup("libTeapotNativeActivity.so");
 #endif
