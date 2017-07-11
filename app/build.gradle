@@ -4,7 +4,10 @@ android {
 
     sourceSets {
         main {
-            jniLibs.srcDirs += ['libs/assimp/']
+            jniLibs.srcDirs += [
+                    'libs/assimp/',
+                    '/home/al/Android/Sdk/ndk-bundle/sources/third_party/vulkan/src/build-android/jniLibs'
+            ]
         }
     }
 
@@ -16,16 +19,17 @@ android {
             storePassword '111111'
         }
     }
-    compileSdkVersion 26
-    buildToolsVersion "26.0.0"
+    compileSdkVersion 24
+    buildToolsVersion "25.0.0"
     defaultConfig {
         applicationId "vulkan.melnichuk.al.amvk"
         minSdkVersion 16
-        targetSdkVersion 26
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
             cmake {
+                arguments '-DANDROID_PLATFORM=android-24', '-DANDROID_TOOLCHAIN=clang'
                 cppFlags "-std=c++11 -frtti -fexceptions"
             }
         }
@@ -39,6 +43,7 @@ android {
     }
     buildTypes {
         release {
+            debuggable true
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -54,6 +59,6 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:26.+'
+    compile 'com.android.support:appcompat-v7:24.+'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
 }

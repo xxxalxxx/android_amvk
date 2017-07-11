@@ -15,7 +15,6 @@
 // This file is generated.
 #ifndef VULKAN_WRAPPER_H
 #define VULKAN_WRAPPER_H
-
 #define VK_NO_PROTOTYPES 1
 #include <vulkan/vulkan.h>
 

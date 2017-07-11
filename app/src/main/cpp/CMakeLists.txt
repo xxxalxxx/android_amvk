@@ -10,9 +10,7 @@ cmake_minimum_required(VERSION 3.4.1)
 add_library(app-glue STATIC
              ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
-
-
-include_directories(lib inc ./ lib/vulkan_wrapper lib/assimp-master/include)
+include_directories(lib src inc)
 
 
 
@@ -24,7 +22,7 @@ set(ndk_helper_dir lib/ndk_helper)
 add_subdirectory(${ndk_helper_dir} ndk_helper)
 
 # build vulkan_wrapper
-add_subdirectory(lib/vulkan_wrapper vulkan_wrapper)
+# add_subdirectory(lib/vulkan_wrapper vulkan_wrapper)
 
 # build assimp
 # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
@@ -44,11 +42,15 @@ set_target_properties(assimp PROPERTIES IMPORTED_LOCATION ${distribution_DIR}/as
 add_library(android_jniiosystem STATIC IMPORTED)
 set_target_properties(android_jniiosystem PROPERTIES IMPORTED_LOCATION ${distribution_DIR}/assimp/${ANDROID_ABI}/libandroid_jniiosystem.a)
 
+# add_library(vulkan SHARED IMPORTED)
+# set_target_properties(vulkan PROPERTIES IMPORTED_LOCATION ${distribution_DIR}/vulkan/${ANDROID_ABI}/libvulkan.so)
+
+
 # Export ANativeActivity_onCreate(), 
 # Refer to: https://github.com/android-ndk/ndk/issues/381.
 set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  -Werror -D VK_USE_PLATFORM_ANDROID_KHR")
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -56,11 +58,13 @@ set(CMAKE_SHARED_LINKER_FLAGS
 
 add_library(amvk SHARED
             ${SOURCES}
-             amvk.cpp )
+             src/main.cpp
+             lib/vulkan_wrapper/vulkan_wrapper.cpp)
 
  target_include_directories(amvk PRIVATE
                             ${ANDROID_NDK}/sources/android/native_app_glue
-                            ${ndk_helper_dir})
+                            ${ndk_helper_dir}
+                            lib/vulkan_wrapper)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -83,8 +87,6 @@ find_library( # Sets the name of the path variable.
 # assimp android_jniiosystem
 target_link_libraries(
                        amvk
-
-                       vulkan_wrapper
                        android
                        ndk_helper
                        app-glue
