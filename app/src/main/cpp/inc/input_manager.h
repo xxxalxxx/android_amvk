@@ -21,7 +21,11 @@ public:
 	bool keyPressed(int key);
 
 #ifdef __ANDROID__
-
+	bool touching;
+    bool movingSideways;
+    float directionSideways;
+    bool movingForward;
+    float directionForward;
 #else
 	InputManager(GLFWwindow& window);
 

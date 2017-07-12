@@ -30,31 +30,43 @@ void Engine::init(android_app* state)
     mCamera.setAspect(mWindow.mAspect);
     mVulkanManager.init();
     mVulkanManager.buildCommandBuffers(mTimer, mCamera);
+
+    JNIEnv* jni;
+    state->activity->vm->AttachCurrentThread(&jni, NULL);
+    jclass clazz = jni->GetObjectClass(state->activity->clazz);
+    jmethodID methodID = jni->GetMethodID(clazz, "showUI", "()V");
+    jni->CallVoidMethod(state->activity->clazz, methodID);
+    state->activity->vm->DetachCurrentThread();
 }
 
 
 int32_t Engine::handleInput(android_app *app, AInputEvent *event)
 {
-    Engine* eng = (Engine*)app->userData;
+    Engine* eng = (Engine*) app->userData;
+    InputManager& inputManager = eng->getWindow().getInputManager();
+    Camera& camera = eng->getCamera();
 
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
 
-        unsigned int flags =  AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
-
-        switch (flags) {
-            case AMOTION_EVENT_ACTION_UP:
-
-                break;
-            case AMOTION_EVENT_ACTION_DOWN:
-                break;
-        }
-
-
+        int flags =  AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
 
         float x = AMotionEvent_getX(event, 0);
         float y = AMotionEvent_getY(event, 0);
 
-        glm::vec2 touchPos(x, y);
+
+        switch (flags) {
+            case AMOTION_EVENT_ACTION_DOWN:
+                inputManager.touching = true;
+                camera.mPrevMouseX = x;
+                camera.mPrevMouseY = y;
+                break;
+            case AMOTION_EVENT_ACTION_UP:
+                inputManager.touching = false;
+                break;
+        }
+
+        camera.updateOrientation(x, y);
+
 
         return 1;
     }
@@ -190,20 +202,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	}
 }
 
-void Engine::handleMovement(double dt)
-{
-	InputManager& im = mWindow.getInputManager();
-	if(im.keyPressed(GLFW_KEY_W))
-        mCamera.moveStraight(1.0f, dt);
-    if(im.keyPressed(GLFW_KEY_S))
-        mCamera.moveStraight(-1.0f, dt);
-
-    if(im.keyPressed(GLFW_KEY_D))
-        mCamera.moveSideways(1.0f, dt);
-    if(im.keyPressed(GLFW_KEY_A))
-        mCamera.moveSideways(-1.0f, dt);
-}
-
 void Engine::init()
 {
 	mWindow.initWindow(*this);
@@ -221,6 +219,32 @@ void Engine::init()
 }
 
 #endif
+
+
+void Engine::handleMovement(double dt)
+{
+#ifdef __ANDROID__
+    InputManager& im = mWindow.getInputManager();
+    if (im.movingForward)
+        mCamera.moveStraight(im.directionForward, dt);
+
+    if (im.movingSideways)
+        mCamera.moveSideways(im.directionSideways, dt);
+#else
+    InputManager& im = mWindow.getInputManager();
+    if (im.keyPressed(GLFW_KEY_W))
+        mCamera.moveStraight(1.0f, dt);
+    if (im.keyPressed(GLFW_KEY_S))
+        mCamera.moveStraight(-1.0f, dt);
+
+    if (im.keyPressed(GLFW_KEY_D))
+        mCamera.moveSideways(1.0f, dt);
+    if (im.keyPressed(GLFW_KEY_A))
+        mCamera.moveSideways(-1.0f, dt);
+#endif
+
+}
+
 
 Window& Engine::getWindow()
 {

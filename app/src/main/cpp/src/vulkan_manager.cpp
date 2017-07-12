@@ -7,7 +7,8 @@ VulkanManager::VulkanManager(Window& window):
 	mSwapChainManager(mVulkanState, mWindow),
 	mQuad(mVulkanState),
 	mSuit(mVulkanState),
-	mGuard(mVulkanState),
+	dwarf(mVulkanState),
+    guard(mVulkanState),
 	imageIndex(0)
 {
 	
@@ -40,7 +41,7 @@ void VulkanManager::init()
 	Skinned::createPipeline(mVulkanState);
 	mQuad.init();
 
-	mGuard.init(FileManager::getModelsPath(
+	dwarf.init(FileManager::getModelsPath(
 			"dwarf/dwarf2.ms3d"
 						//"guard/boblampclean.md5mesh"
 				),
@@ -48,11 +49,20 @@ void VulkanManager::init()
 			//0
 				Skinned::ModelFlag_stripFullPath
 	);
-    mGuard.ubo.model = glm::scale(glm::vec3(0.15f, 0.15f, 0.15f));
-	mGuard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(1.f, 0.f, 0.f)) * mGuard.ubo.model;
-    mGuard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * mGuard.ubo.model;
-    mGuard.ubo.model = glm::translate(glm::vec3(2.0f, 4.0f, 8.0f))  * mGuard.ubo.model;
-	mGuard.animSpeedScale = 0.5f;
+    dwarf.ubo.model = glm::scale(glm::vec3(0.15f, 0.15f, 0.15f));
+    dwarf.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(1.f, 0.f, 0.f)) * dwarf.ubo.model;
+    dwarf.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * dwarf.ubo.model;
+    dwarf.ubo.model = glm::translate(glm::vec3(2.0f, 4.0f, 8.0f))  * dwarf.ubo.model;
+    dwarf.animSpeedScale = 0.5f;
+
+	guard.init(FileManager::getModelsPath("guard/boblampclean.md5mesh"),
+               Skinned::DEFAULT_FLAGS | aiProcess_FlipUVs | aiProcess_FlipWindingOrder,
+               0);
+    guard.ubo.model = glm::scale(glm::vec3(0.18f, 0.18f, 0.18f));
+    guard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(1.f, 0.f, 0.f)) * guard.ubo.model;
+    guard.ubo.model = glm::rotate(glm::radians(-30.f), glm::vec3(0.f, 1.f, 0.f)) * guard.ubo.model;
+    guard.ubo.model = glm::translate(glm::vec3(-9.0f, 4.0f, 8.0f))  * guard.ubo.model;
+    //guard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * guard.ubo.model;
 
 	/*ShaderManager::createShaders(mVulkanState);
 	DescriptorManager::createDescriptorSetLayouts(mVulkanState);
@@ -94,8 +104,8 @@ void VulkanManager::updateUniformBuffers(const Timer& timer, Camera& camera)
 {
 	CmdPass cmd(mVulkanState.device, mVulkanState.commandPool, mVulkanState.graphicsQueue);
 	mQuad.updateUniformBuffers(cmd.buffer, timer, camera);
-	//mSuit.update(cmd.buffer, timer, camera);
-	mGuard.update(cmd.buffer, timer, camera);
+	dwarf.update(cmd.buffer, timer, camera);
+	guard.update(cmd.buffer, timer, camera);
 }
 
 void VulkanManager::buildCommandBuffers(const Timer &timer, Camera &camera)
@@ -143,7 +153,8 @@ void VulkanManager::buildCommandBuffers(const Timer &timer, Camera &camera)
 		//mQuad.draw(mSwapChainManager.mVkCommandBuffers[i]);
 		//mSuit.draw(mSwapChainManager.mVkCommandBuffers[i], 	mVulkanState.pipelines.model.pipeline, mVulkanState.pipelines.model.layout);
 
-		mGuard.draw(mSwapChainManager.mVkCommandBuffers[i], mVulkanState.pipelines.skinned.pipeline, mVulkanState.pipelines.skinned.layout);
+		dwarf.draw(mSwapChainManager.mVkCommandBuffers[i], mVulkanState.pipelines.skinned.pipeline, mVulkanState.pipelines.skinned.layout);
+        guard.draw(mSwapChainManager.mVkCommandBuffers[i], mVulkanState.pipelines.skinned.pipeline, mVulkanState.pipelines.skinned.layout);
 
 		vkCmdEndRenderPass( mSwapChainManager.mVkCommandBuffers[i]);
 		VK_CHECK_RESULT(vkEndCommandBuffer(mSwapChainManager.mVkCommandBuffers[i]));

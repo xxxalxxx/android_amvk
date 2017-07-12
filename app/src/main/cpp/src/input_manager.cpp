@@ -19,7 +19,12 @@ void InputManager::pollEvents()
 }
 
 #ifdef __ANDROID__
-InputManager::InputManager()
+InputManager::InputManager():
+        touching(false),
+        movingSideways(false),
+        directionSideways(0.0f),
+        movingForward(false),
+        directionForward(0.0f)
 {
 
 }

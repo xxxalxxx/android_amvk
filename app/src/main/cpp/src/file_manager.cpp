@@ -116,27 +116,25 @@ void FileManager::readCache(std::vector<char>& out, const std::string& cacheName
     filepath += "/";
     filepath +=  FileManager::getInstance().mCacheDir;
 	LOG("CACHE PATH: %s", filepath.c_str());
-	struct stat sb;
-	int32_t res = stat(filepath.c_str(), &sb);
-	if (ENOENT == errno) {
-		LOG("NO CACHE DIR FOUND");
-		out.clear();
-		return;
-	}
+
 	std::string filename = filepath + cacheName;
-	AAsset* asset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_STREAMING);
-	off_t size;
-	if (!asset || (size = AAsset_getLength(asset)) <= 0) {
-		LOG("Unable to open asset or asset is empty!");
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open()) {
+		LOG("CACHE CANNOT BE OPENED");
 		out.clear();
 		return;
 	}
 
-	out.resize((size_t ) size);
-	AAsset_read(asset, out.data(), (size_t) size);
-	AAsset_close(asset);
 
-	LOG("RETURNING CACHED: %zu", size);
+	size_t fileSize = (size_t) file.tellg();
+	out.resize(fileSize);
+
+	file.seekg(0);
+	file.read(out.data(), fileSize);
+	file.close();
+
+	LOG("RETURNING CACHED: %zu", fileSize);
 #else
 	std::string filename = FileManager::getInstance().mCacheDir + cacheName;
 	LOG("CACHE FILE NAME: %s", filename);
@@ -184,17 +182,15 @@ void FileManager::writeCache(const char* cacheName, void* data, size_t size)
 	if (res == 0) {
 		std::string filename = filepath + cacheName;
 		LOG("INTERNAL STORAGE FILENAME: %s", filename.c_str());
-		AAsset* configFileAsset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_BUFFER);
+		//AAsset* configFileAsset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_BUFFER);
 		std::ofstream binFile(filename, std::ios::out | std::ios::binary);
 		if (!binFile.is_open()) {
             LOG("UNABLE TO OPEN FILENAME %s", filename.c_str());
             throw std::runtime_error("failed to open cache!");
         }
-        LOG("before write");
 		binFile.write((char*) &data, size);
-        LOG("after write");
 		binFile.close();
-		AAsset_close(configFileAsset);
+		//AAsset_close(configFileAsset);
 		LOG("CACHE WRITTEN");
 	}
 #else

@@ -1,10 +1,6 @@
 
 
 
-
-
-
-
 /* #include <assimp/port/AndroidJNI/AndroidJNIIOSystem.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -25,18 +21,9 @@
 #include "task_manager.h"
 #include "engine.h"
 
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_vulkan_melnichuk_al_amvk_MainNativeActivity_stringFromJNI(
-        JNIEnv *env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
-}
-
-//1200 line in base - android motion
 
 
+Engine engine;
 
 void android_main(android_app* state) {
 
@@ -44,19 +31,8 @@ void android_main(android_app* state) {
     //monstartup("libTeapotNativeActivity.so");
 #endif
 
-    /*Assimp::Importer *importer = new Assimp::Importer();
-    Assimp::AndroidJNIIOSystem *ioSystem = new Assimp::AndroidJNIIOSystem(state->activity);
-    importer->SetIOHandler(ioSystem);
-    const aiScene *scene = importer->ReadFile("nanosuit/nanosuit.obj", aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices);
-
-    if (!scene) {
-        LOGI("%s", importer->GetErrorString());
-    } else {
-        LOGI("NO ERROR, num Meshes: %u, num vertices: %u", scene->mNumMeshes, scene->mMeshes[0]->mNumVertices);
-
-    }*/
     bool initialized = false;
-    Engine engine;
+
     engine.state = state;
    // engine.init(state);
 
@@ -74,7 +50,6 @@ void android_main(android_app* state) {
 
     while (1) {
         // Read all pending events.
-
         int events;
         android_poll_source* source;
 
@@ -106,13 +81,37 @@ void android_main(android_app* state) {
             }
 
             double dt = timer.tick();
-            //engine.handleMovement(dt);
+            engine.handleMovement(dt);
             vulkanManager.updateUniformBuffers(timer, camera);
             vulkanManager.draw();
         }
-
-        LOG("LOOP");
     }
+
+}
+
+
+
+extern "C" {
+
+JNIEXPORT void JNICALL
+Java_vulkan_melnichuk_al_amvk_MainNativeActivity_setSidewaysMovement(JNIEnv *env, jobject instance,
+                                                                     jboolean moving,
+                                                                     jfloat direction)
+{
+    InputManager& im = engine.getWindow().getInputManager();
+    im.movingSideways = moving;
+    im.directionSideways = direction;
+}
+
+JNIEXPORT void JNICALL
+Java_vulkan_melnichuk_al_amvk_MainNativeActivity_setForwardMovement(JNIEnv *env, jobject instance,
+                                                                    jboolean moving,
+                                                                    jfloat direction)
+{
+    InputManager& im = engine.getWindow().getInputManager();
+    im.movingForward = moving;
+    im.directionForward = direction;
+}
 
 }
 

@@ -464,7 +464,7 @@ void Skinned::createPipeline(VulkanState& state)
 
 	VK_CHECK_RESULT(vkCreateGraphicsPipelines(state.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &state.pipelines.skinned.pipeline));
 	
-	//cacheInfo.saveCache(state.device);
+	cacheInfo.saveCache(state.device);
 
 	LOG("SKINNED MODEL PIPELINE CREATED");
 

@@ -45,7 +45,6 @@ private:
 	Timer mTimer;
 
 
-
 };
 
 

@@ -82,7 +82,8 @@ private:
 	SwapchainManager mSwapChainManager;
 	Quad mQuad;
 	Model mSuit;
-	Skinned mGuard;
+	Skinned guard;
+	Skinned dwarf;
 	uint32_t imageIndex;
 };
 

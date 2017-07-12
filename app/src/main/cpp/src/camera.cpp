@@ -9,11 +9,17 @@ const float Camera::MIN_FOV_RADIANS = M_PI_4;
 
 
 Camera::Camera():
-	mNear(0.1f), mFar(1000.0f), 
-	mFOV(0.5f * (MAX_FOV_RADIANS + MIN_FOV_RADIANS)), mAspect(1.0f),
-	mPitch(0.0f), mYaw(3.0f),
-	mForwardMovementScalar(40.0f), mSidewaysMovementScalar(40.0f), mMouseSensitivityScalar(0.002f), mScrollSensitivityScalar(0.05f),
-	mEye(0.0f, 0.0f, -4.0f),
+	mNear(0.1f),
+    mFar(1000.0f),
+	mFOV(0.5f * (MAX_FOV_RADIANS + MIN_FOV_RADIANS)),
+    mAspect(1.0f),
+	mPitch(0.0f),
+    mYaw(3.2f),
+	mForwardMovementScalar(40.0f), 
+    mSidewaysMovementScalar(40.0f),
+    mMouseSensitivityScalar(0.002f),
+    mScrollSensitivityScalar(0.05f),
+	mEye(0.0f, 0.0f, -8.0f),
 	initPrevPos(true)
 {
 	updateViewAngles();
@@ -30,11 +36,14 @@ void Camera::updateViewAngles()
 
 void Camera::updateOrientation(double mouseX, double mouseY)
 {
+
+#ifndef __ANDROID__
 	if (initPrevPos) {
 		mPrevMouseX = mouseX;
 		mPrevMouseY = mouseY;
 		initPrevPos = false;
 	}
+#endif
 
     double mouseDx = mMouseSensitivityScalar * (mouseX - mPrevMouseX);
     double mouseDy = mMouseSensitivityScalar * (mouseY - mPrevMouseY);
