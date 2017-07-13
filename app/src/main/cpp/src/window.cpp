@@ -1,5 +1,5 @@
 #include <engine.h>
-#include <android_native_app_glue.h>
+
 #include "window.h"
 
 Window::Window():

@@ -22,7 +22,10 @@
 #define LOG(...) do { ((void)__android_log_print(ANDROID_LOG_INFO, "__AMVK", __VA_ARGS__)); } while (0)
 #else
 
-#define LOG(...) do { printf(__VA_ARGS__);/*std::cout << x << std::endl;*/ } while (0)
+#define LOG(...) do { \
+	printf(__VA_ARGS__); \
+	printf("\n"); \
+} while (0) 
 #endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))

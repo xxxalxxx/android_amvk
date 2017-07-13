@@ -5,8 +5,8 @@
 #ifdef __ANDROID__
 #include "vulkan_wrapper.h"
 #else
-#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
 #endif
 
 

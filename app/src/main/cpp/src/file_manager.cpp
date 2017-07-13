@@ -133,7 +133,7 @@ void FileManager::readCache(std::vector<char>& out, const std::string& cacheName
 	LOG("RETURNING CACHED: %zu", fileSize);
 #else
 	std::string filename = FileManager::getInstance().mCacheDir + cacheName;
-	LOG("CACHE FILE NAME: %s", filename);
+	LOG("CACHE FILE NAME: %s", filename.c_str());
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {
@@ -191,7 +191,7 @@ void FileManager::writeCache(const char* cacheName, void* data, size_t size)
 	}
 #else
 	std::string filename = FileManager::getInstance().mCacheDir + cacheName;
-	LOG("CACHE FILE NAME: %s", filename);
+	LOG("CACHE FILE NAME: %s", filename.c_str());
 
 	std::ofstream binFile(filename, std::ios::out | std::ios::binary);
     if (!binFile.is_open())

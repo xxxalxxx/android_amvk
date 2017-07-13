@@ -2,8 +2,8 @@
 #define AMVK_WINDOW_H
 
 #ifdef __ANDROID__
-
 #include <android/native_window.h>
+#include <android_native_app_glue.h>
 #else
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
