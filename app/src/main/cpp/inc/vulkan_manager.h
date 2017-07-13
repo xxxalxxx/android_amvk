@@ -1,31 +1,6 @@
 #ifndef AMVK_VULKAN_MANAGER_H
 #define AMVK_VULKAN_MANAGER_H
 
-/*
-#define VK_THROW_RESULT_ERROR(text, result) \
-	do { \
-		char str[128]; \
-		int resultCode = static_cast<int>(result); \
-		sprintf(str, #text " VkResult: %s (code: %d)", VulkanUtils::getVkResultString(resultCode), resultCode); \
-		throw std::runtime_error(str); \
-	} while (0)
-
-#define VK_CHECK_RESULT(f)  \
-	do { \
-		VkResult result = f; \
-		if (result != VK_SUCCESS) \
-			VK_THROW_RESULT_ERROR(f, result); \
-	} while (0)
-
-#define VK_CALL_IPROC(instance, func, ...) \
-	do { \
-		auto __##func = (PFN_##func) vkGetInstanceProcAddr(instance, #func); \
-		if (!__##func) \
-			throw std::runtime_error("Failed to get Vulkan instance procedure for " #func); \
-		if (__##func(__VA_ARGS__) != VK_SUCCESS) \
-		   throw std::runtime_error("Failed to call iproc for " #func); \
-	} while (0)
-*/
 #include <limits>
 #include <cstring>
 #include <vector>
@@ -43,6 +18,7 @@
 #include "file_manager.h"
 #include "vulkan_utils.h"
 #include "pipeline_creator.h"
+#include "pipeline_manager.h"
 #include <chrono>
 #include "texture_manager.h"
 #include "device_manager.h"
@@ -70,18 +46,17 @@ public:
 	void waitIdle();
 	void recreateSwapChain();
 
-	const VkDevice& getVkDevice() const;
-
+	//const VkDevice& getVkDevice() const;
 
 private:
 	void updateUniformBuffer(const Timer& timer);
 
 	Window& mWindow;
-	VulkanState mVulkanState;
+	VulkanState mState;
 	DeviceManager mDeviceManager;
 	SwapchainManager mSwapChainManager;
-	Quad mQuad;
-	Model mSuit;
+	Quad quad;
+	Model suit;
 	Skinned guard;
 	Skinned dwarf;
 	uint32_t imageIndex;

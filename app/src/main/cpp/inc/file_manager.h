@@ -19,6 +19,7 @@
 #endif
 
 #ifdef __ANDROID__
+
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,9 +32,10 @@ class FileManager {
 public:
 
 #ifdef __ANDROID__
+    static ANativeActivity* activity;
 	static AAssetManager* assetManager;
 	static const char* internalStoragePath;
-	static Assimp::AndroidJNIIOSystem *assimpIoSystem;
+    static Assimp::AndroidJNIIOSystem* newAssimpIOSystem();
 #endif
 
 

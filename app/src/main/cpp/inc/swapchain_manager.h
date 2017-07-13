@@ -40,8 +40,8 @@ public:
 	SwapChainDesc getSwapChainDesc(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface);
 	SwapChainDesc swapChainDesc;
 
-	std::vector<VkFramebuffer> mSwapChainFramebuffers;
-	std::vector<VkCommandBuffer> mVkCommandBuffers;
+	std::vector<VkFramebuffer> framebuffers;
+	std::vector<VkCommandBuffer> cmdBuffers;
 
 	VkSemaphore mImageAvailableSemaphore, mRenderFinishedSemaphore;
 private:

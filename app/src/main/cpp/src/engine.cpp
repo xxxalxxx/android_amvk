@@ -22,9 +22,9 @@ Engine::Engine():
 
 void Engine::init(android_app* state)
 {
+    FileManager::activity = state->activity;
     FileManager::assetManager = state->activity->assetManager;
     FileManager::internalStoragePath = state->activity->internalDataPath;
-    FileManager::assimpIoSystem = new Assimp::AndroidJNIIOSystem(state->activity);
     mWindow.initWindow(*this);
     LOG("WINDOW ASPECT %f width: %u height: %u", mWindow.mAspect, mWindow.mWidth, mWindow.mHeight);
     mCamera.setAspect(mWindow.mAspect);

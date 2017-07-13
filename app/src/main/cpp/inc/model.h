@@ -23,7 +23,7 @@
 
 #include "macro.h"
 #include "util.h"
-#include "pipeline_manager.h"
+#include "pipeline_cache.h"
 #include "buffer_helper.h"
 #include "vulkan_image_creator.h"
 #include "vulkan_image_info.h"
@@ -92,7 +92,6 @@ public:
 
 	static void convertVector(const aiVector3D& src, glm::vec3& dest);
 	static void convertVector(const aiVector3D& src, glm::vec2& dest);
-	static void createPipeline(VulkanState& state);
 
 	Model(VulkanState& vulkanState);
 	virtual ~Model();

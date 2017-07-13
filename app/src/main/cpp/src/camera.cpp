@@ -15,7 +15,7 @@ Camera::Camera():
     mAspect(1.0f),
 	mPitch(0.0f),
     mYaw(3.2f),
-	mForwardMovementScalar(40.0f), 
+	mForwardMovementScalar(40.0f),
     mSidewaysMovementScalar(40.0f),
     mMouseSensitivityScalar(0.002f),
     mScrollSensitivityScalar(0.05f),

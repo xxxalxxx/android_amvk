@@ -49,7 +49,7 @@ void Skinned::init(const char* modelPath, unsigned int pFlags, ModelFlags modelF
 	mModelFlags = modelFlags;
 	LOG("FOLDER: %s", mFolder.c_str());
 #ifdef __ANDROID__
-	importer.SetIOHandler(FileManager::assimpIoSystem);
+	importer.SetIOHandler(FileManager::newAssimpIOSystem());
 #endif
 	mScene = importer.ReadFile(modelPath, pFlags);
 	  
@@ -389,87 +389,6 @@ void Skinned::createCommonBuffer(const std::vector<Vertex>& vertices, const std:
 			mCommonBufferInfo.size);
 }
 
-void Skinned::createPipeline(VulkanState& state) 
-{
-	VkPipelineShaderStageCreateInfo stages[] = {
-		state.shaders.skinned.vertex,
-		state.shaders.skinned.fragment
-	};
-
-	VkVertexInputBindingDescription bindingDesc = {};
-	bindingDesc.binding = 0;
-	bindingDesc.stride = sizeof(Vertex);
-	bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	//location, binding, format, offset
-	VkVertexInputAttributeDescription attrDesc[] = { 
-		{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
-		{ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal) },
-		{ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent) },
-		{ 3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, bitangent) },
-		{ 4, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord) },
-		{ 5, 0, VK_FORMAT_R32G32B32A32_UINT, offsetof(Vertex, boneIndices) },
-		{ 6, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, weights) },
-		{ 7, 0, VK_FORMAT_R32G32B32A32_UINT, offsetof(Vertex, samplerIndices) },
-	};
-
-	auto vertexInputInfo = PipelineCreator::vertexInputState(&bindingDesc, 1, attrDesc, ARRAY_SIZE(attrDesc)); 
-
-	VkPipelineInputAssemblyStateCreateInfo assemblyInfo = PipelineCreator::inputAssemblyNoRestart(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	VkPipelineViewportStateCreateInfo viewportState = PipelineCreator::viewportStateDynamic();
-
-	VkDynamicState dynamicStates[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo dynamicInfo = PipelineCreator::dynamicState(dynamicStates, ARRAY_SIZE(dynamicStates));
-	VkPipelineRasterizationStateCreateInfo rasterizationState = PipelineCreator::rasterizationStateCullBackCCW();
-	VkPipelineDepthStencilStateCreateInfo depthStencil = PipelineCreator::depthStencilStateDepthLessNoStencil();
-	VkPipelineMultisampleStateCreateInfo multisampleState = PipelineCreator::multisampleStateNoMultisampleNoSampleShading();
-	VkPipelineColorBlendAttachmentState blendAttachmentState = PipelineCreator::blendAttachmentStateDisabled();
-
-	VkPipelineColorBlendStateCreateInfo blendState = PipelineCreator::blendStateDisabled(&blendAttachmentState, 1); 
-	
-	VkPhysicalDeviceProperties physicalDeviceProperties;
-	vkGetPhysicalDeviceProperties(state.physicalDevice, &physicalDeviceProperties);
-
-	VkDescriptorSetLayout layouts[] = {
-		state.descriptorSetLayouts.uniform,
-		state.descriptorSetLayouts.samplerList
-	};
-
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineCreator::layout(layouts, ARRAY_SIZE(layouts), NULL, 0);
-	VK_CHECK_RESULT(vkCreatePipelineLayout(state.device, &pipelineLayoutInfo, nullptr, &state.pipelines.skinned.layout));
-
-	PipelineCacheInfo cacheInfo("skinned", state.pipelines.skinned.cache);
-	cacheInfo.getCache(state.device);
-
-	VkGraphicsPipelineCreateInfo pipelineInfo = {};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = ARRAY_SIZE(stages);
-	pipelineInfo.pStages = stages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &assemblyInfo;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizationState;
-	pipelineInfo.pMultisampleState = &multisampleState;
-	pipelineInfo.pDepthStencilState = &depthStencil;
-	pipelineInfo.pColorBlendState = &blendState;
-	pipelineInfo.pDynamicState = &dynamicInfo;
-	pipelineInfo.layout = state.pipelines.skinned.layout;
-	pipelineInfo.renderPass = state.renderPass;
-	pipelineInfo.subpass = 0;
-	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-	VK_CHECK_RESULT(vkCreateGraphicsPipelines(state.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &state.pipelines.skinned.pipeline));
-	
-	cacheInfo.saveCache(state.device);
-
-	LOG("SKINNED MODEL PIPELINE CREATED");
-
-}
-
 void Skinned::createDescriptorPool() 
 {
 	VkDescriptorPoolSize uboSize = {};
@@ -532,7 +451,6 @@ void Skinned::createDescriptorSet()
 
 	for (auto& materialPair : mMaterialIndexToMaterial) {
 		Material& material = materialPair.second;
-
 		for (size_t i = 0; i < material.textures.size(); ++i) {
 			auto& texture = material.textures[i];
 			auto& descriptorInfo = images[texture.index];

@@ -30,8 +30,9 @@ void Quad::init()
 	createDescriptorSet();
 }
 
-void Quad::updateUniformBuffers(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera) 
+void Quad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera) 
 {
+
 	UBO ubo = {};
 	ubo.model = glm::mat4();
 	ubo.view = camera.view();
@@ -43,13 +44,13 @@ void Quad::updateUniformBuffers(VkCommandBuffer& commandBuffer, const Timer& tim
 			mVulkanState.device,
 			mVulkanState.commandPool,
 			mVulkanState.graphicsQueue,
-			mCommonStagingBufferInfo.buffer, 
+			mCommonStagingBufferInfo.buffer,
 			mCommonBufferInfo.buffer,
 			mUniformBufferOffset,
 			sizeof(ubo));
 	*/
 
-	//CmdPass cmdPass(mVulkanState.device, mVulkanState.commandPool, mVulkanState.graphicsQueue); 
+	//CmdPass cmdPass(mVulkanState.device, mVulkanState.commandPool, mVulkanState.graphicsQueue);
 
 	vkCmdUpdateBuffer(
 			commandBuffer,
@@ -65,33 +66,30 @@ void Quad::updateUniformBuffers(VkCommandBuffer& commandBuffer, const Timer& tim
 
 	BufferHelper::copyBuffer(
 			mVulkanState,
-			mUniformStagingBufferDesc.buffer, 
-			mUniformBufferDesc.buffer, 
+			mUniformStagingBufferDesc.buffer,
+			mUniformBufferDesc.buffer,
 			sizeof(ubo));
 	*/
-}
 
-void Quad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera) 
-{
 	//glm::rotate(glm::mat4(), (float) (10.f * timer.total() * glm::radians(90.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
-	updatePushConstants(commandBuffer, timer, camera);
-	//updateUniformBuffers(timer, camera);
-} 
 
-void Quad::updatePushConstants(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera) 
-{
+
+
+	// Update push constants
 	/*PushConstants pushConstants;
 	pushConstants.model = glm::mat4();
 	pushConstants.view = camera.view();
 	pushConstants.proj = camera.proj();
 	vkCmdPushConstants(
-			commandBuffer, 
-			mVulkanState.pipelines.quad.layout, 
-			VK_SHADER_STAGE_VERTEX_BIT, 
+			commandBuffer,
+			mVulkanState.pipelines.quad.layout,
+			VK_SHADER_STAGE_VERTEX_BIT,
 			0,
 			sizeof(PushConstants),
 			&pushConstants);*/
-}
+
+} 
+
 
 void Quad::draw(VkCommandBuffer& commandBuffer) 
 {
@@ -283,81 +281,6 @@ void Quad::createDescriptorSet()
 	writeSets[1].pImageInfo = &imageInfo;
 
 	vkUpdateDescriptorSets(mVulkanState.device, writeSets.size(), writeSets.data(), 0, nullptr);
-}
-
-void Quad::createPipeline(VulkanState& state)
-{
-	VkPipelineShaderStageCreateInfo stages[] = {
-		state.shaders.quad.vertex,
-		state.shaders.quad.fragment
-	};
-
-	VkVertexInputBindingDescription bindingDesc = {};
-	bindingDesc.binding = 0;
-	bindingDesc.stride = VERTEX_SIZE;
-	bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	//location, binding, format, offset
-	VkVertexInputAttributeDescription attrDesc[] = { 
-		{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
-		{ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) },
-		{ 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord) }
-	};
-
-	auto vertexInputInfo = PipelineCreator::vertexInputState(&bindingDesc, 1, attrDesc, ARRAY_SIZE(attrDesc)); 
-
-	VkPipelineInputAssemblyStateCreateInfo assemblyInfo = PipelineCreator::inputAssemblyNoRestart(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	VkPipelineViewportStateCreateInfo viewportState = PipelineCreator::viewportStateDynamic();
-
-	VkDynamicState dynamicStates[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo dynamicInfo = PipelineCreator::dynamicState(dynamicStates, ARRAY_SIZE(dynamicStates));
-	VkPipelineRasterizationStateCreateInfo rasterizationState = PipelineCreator::rasterizationStateCullBackCCW();
-	VkPipelineDepthStencilStateCreateInfo depthStencil = PipelineCreator::depthStencilStateDepthLessNoStencil();
-	VkPipelineMultisampleStateCreateInfo multisampleState = PipelineCreator::multisampleStateNoMultisampleNoSampleShading();
-	VkPipelineColorBlendAttachmentState blendAttachmentState = PipelineCreator::blendAttachmentStateDisabled();
-
-	VkPipelineColorBlendStateCreateInfo blendState = PipelineCreator::blendStateDisabled(&blendAttachmentState, 1); 
-	
-	VkPhysicalDeviceProperties physicalDeviceProperties;
-	vkGetPhysicalDeviceProperties(state.physicalDevice, &physicalDeviceProperties);
-
-	VkPushConstantRange pushConstantRange = PipelineCreator::pushConstantRange(
-			state,
-			VK_SHADER_STAGE_VERTEX_BIT, 
-			0,
-			PUSH_CONST_SIZE);
-
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineCreator::layout(&state.descriptorSetLayouts.quad, 1, &pushConstantRange, 1);
-	VK_CHECK_RESULT(vkCreatePipelineLayout(state.device, &pipelineLayoutInfo, nullptr, &state.pipelines.quad.layout));
-
-	PipelineCacheInfo cacheInfo("quad", state.pipelines.quad.cache);
-	cacheInfo.getCache(state.device);
-
-	VkGraphicsPipelineCreateInfo pipelineInfo = {};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = ARRAY_SIZE(stages);
-	pipelineInfo.pStages = stages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &assemblyInfo;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizationState;
-	pipelineInfo.pMultisampleState = &multisampleState;
-	pipelineInfo.pDepthStencilState = &depthStencil;
-	pipelineInfo.pColorBlendState = &blendState;
-	pipelineInfo.pDynamicState = &dynamicInfo;
-	pipelineInfo.layout = state.pipelines.quad.layout;
-	pipelineInfo.renderPass = state.renderPass;
-	pipelineInfo.subpass = 0;
-	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-	VK_CHECK_RESULT(vkCreateGraphicsPipelines(state.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &state.pipelines.quad.pipeline));
-	
-	//cacheInfo.saveCache(state.device);
-
 }
 
 

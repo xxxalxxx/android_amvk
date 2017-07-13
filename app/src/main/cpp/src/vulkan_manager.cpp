@@ -3,12 +3,12 @@
 
 VulkanManager::VulkanManager(Window& window):
 	mWindow(window),
-	mDeviceManager(mVulkanState),
-	mSwapChainManager(mVulkanState, mWindow),
-	mQuad(mVulkanState),
-	mSuit(mVulkanState),
-	dwarf(mVulkanState),
-    guard(mVulkanState),
+	mDeviceManager(mState),
+	mSwapChainManager(mState, mWindow),
+	quad(mState),
+	suit(mState),
+	dwarf(mState),
+    guard(mState),
 	imageIndex(0)
 {
 	
@@ -34,21 +34,21 @@ void VulkanManager::init()
 	mSwapChainManager.createRenderPass();
 	mSwapChainManager.createCommandPool();
 
-	ShaderManager::createShaders(mVulkanState);
-	DescriptorManager::createDescriptorSetLayouts(mVulkanState);
-	DescriptorManager::createDescriptorPool(mVulkanState);
-	Quad::createPipeline(mVulkanState);
-	Skinned::createPipeline(mVulkanState);
-	mQuad.init();
+	ShaderManager::createShaders(mState);
+	DescriptorManager::createDescriptorSetLayouts(mState);
+	DescriptorManager::createDescriptorPool(mState);
+    PipelineManager::createPipelines(mState);
 
-	dwarf.init(FileManager::getModelsPath(
-			"dwarf/dwarf2.ms3d"
-						//"guard/boblampclean.md5mesh"
-				),
-				Skinned::DEFAULT_FLAGS | aiProcess_FlipUVs | aiProcess_FlipWindingOrder,
-			//0
-				Skinned::ModelFlag_stripFullPath
-	);
+
+	quad.init();
+
+    suit.init(FileManager::getModelsPath("nanosuit/nanosuit.obj"),
+              Model::DEFAULT_FLAGS | aiProcess_FlipUVs);
+
+	dwarf.init(FileManager::getModelsPath("dwarf/dwarf2.ms3d"),
+               Skinned::DEFAULT_FLAGS | aiProcess_FlipUVs | aiProcess_FlipWindingOrder,
+               Skinned::ModelFlag_stripFullPath);
+
     dwarf.ubo.model = glm::scale(glm::vec3(0.15f, 0.15f, 0.15f));
     dwarf.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(1.f, 0.f, 0.f)) * dwarf.ubo.model;
     dwarf.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * dwarf.ubo.model;
@@ -62,36 +62,9 @@ void VulkanManager::init()
     guard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(1.f, 0.f, 0.f)) * guard.ubo.model;
     guard.ubo.model = glm::rotate(glm::radians(-30.f), glm::vec3(0.f, 1.f, 0.f)) * guard.ubo.model;
     guard.ubo.model = glm::translate(glm::vec3(-9.0f, 4.0f, 8.0f))  * guard.ubo.model;
-    //guard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * guard.ubo.model;
 
-	/*ShaderManager::createShaders(mVulkanState);
-	DescriptorManager::createDescriptorSetLayouts(mVulkanState);
-	DescriptorManager::createDescriptorPool(mVulkanState);
-
-	Quad::createPipeline(mVulkanState);
-	Model::createPipeline(mVulkanState);
-	Skinned::createPipeline(mVulkanState);
-
-	mQuad.init();
-
-//	mSuit.init(FileManager::getModelsPath("guard/boblampclean.md5mesh"), Model::DEFAULT_FLAGS | aiProcess_FlipUVs);
-//	mSuit.ubo.model = glm::rotate(glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
-//	mSuit.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * mSuit.ubo.model;
-
-	mGuard.init(FileManager::getModelsPath(
-				"dwarf/dwarf2.ms3d"
-				//"guard/boblampclean.md5mesh"
-				), 
-			Skinned::DEFAULT_FLAGS | aiProcess_FlipUVs | aiProcess_FlipWindingOrder,
-			//0
-			Skinned::ModelFlag_stripFullPath
-			);
-	mGuard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(1.f, 0.f, 0.f));
-	mGuard.animSpeedScale = 0.5f;
-	//mGuard.ubo.model = glm::rotate(glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) * mGuard.ubo.model;
-*/
 	mSwapChainManager.createDepthResources();
-	mSwapChainManager.createFramebuffers(mVulkanState.renderPass);
+	mSwapChainManager.createFramebuffers(mState.renderPass);
 
 	mSwapChainManager.createCommandBuffers();
 	mSwapChainManager.createSemaphores();
@@ -102,8 +75,9 @@ void VulkanManager::init()
 
 void VulkanManager::updateUniformBuffers(const Timer& timer, Camera& camera)
 {
-	CmdPass cmd(mVulkanState.device, mVulkanState.commandPool, mVulkanState.graphicsQueue);
-	mQuad.updateUniformBuffers(cmd.buffer, timer, camera);
+	CmdPass cmd(mState.device, mState.commandPool, mState.graphicsQueue);
+	quad.update(cmd.buffer, timer, camera);
+    suit.update(cmd.buffer, timer, camera);
 	dwarf.update(cmd.buffer, timer, camera);
 	guard.update(cmd.buffer, timer, camera);
 }
@@ -123,48 +97,47 @@ void VulkanManager::buildCommandBuffers(const Timer &timer, Camera &camera)
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginInfo.renderPass = mVulkanState.renderPass;
+	renderPassBeginInfo.renderPass = mState.renderPass;
 	renderPassBeginInfo.renderArea.offset = {0, 0};
-	renderPassBeginInfo.renderArea.extent = mVulkanState.swapChainExtent;
+	renderPassBeginInfo.renderArea.extent = mState.swapChainExtent;
 	renderPassBeginInfo.clearValueCount = ARRAY_SIZE(clearValues);
 	renderPassBeginInfo.pClearValues = clearValues;
 	
-	for (size_t i = 0; i < mSwapChainManager.mVkCommandBuffers.size(); ++i) {	
-		VK_CHECK_RESULT(vkBeginCommandBuffer(mSwapChainManager.mVkCommandBuffers[i], &beginInfo));
-		
-		renderPassBeginInfo.framebuffer = mSwapChainManager.mSwapChainFramebuffers[i];
-		vkCmdBeginRenderPass( mSwapChainManager.mVkCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	for (size_t i = 0; i < mSwapChainManager.cmdBuffers.size(); ++i) {
+        VkCommandBuffer& cmdBuffer = mSwapChainManager.cmdBuffers[i];
+		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &beginInfo));
+		renderPassBeginInfo.framebuffer = mSwapChainManager.framebuffers[i];
+		vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkViewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float) mVulkanState.swapChainExtent.width;
-		viewport.height = (float) mVulkanState.swapChainExtent.height;
+		viewport.width = (float) mState.swapChainExtent.width;
+		viewport.height = (float) mState.swapChainExtent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		
 		VkRect2D scissor = {};
 		scissor.offset = {0, 0};
-		scissor.extent = mVulkanState.swapChainExtent;
+		scissor.extent = mState.swapChainExtent;
 
-		vkCmdSetViewport( mSwapChainManager.mVkCommandBuffers[i], 0, 1, &viewport);
-		vkCmdSetScissor( mSwapChainManager.mVkCommandBuffers[i], 0, 1, &scissor);
+		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 			
-		//mQuad.draw(mSwapChainManager.mVkCommandBuffers[i]);
-		//mSuit.draw(mSwapChainManager.mVkCommandBuffers[i], 	mVulkanState.pipelines.model.pipeline, mVulkanState.pipelines.model.layout);
+		quad.draw(cmdBuffer);
+		suit.draw(cmdBuffer, mState.pipelines.model.pipeline, mState.pipelines.model.layout);
+		dwarf.draw(cmdBuffer, mState.pipelines.skinned.pipeline, mState.pipelines.skinned.layout);
+        guard.draw(cmdBuffer, mState.pipelines.skinned.pipeline, mState.pipelines.skinned.layout);
 
-		dwarf.draw(mSwapChainManager.mVkCommandBuffers[i], mVulkanState.pipelines.skinned.pipeline, mVulkanState.pipelines.skinned.layout);
-        guard.draw(mSwapChainManager.mVkCommandBuffers[i], mVulkanState.pipelines.skinned.pipeline, mVulkanState.pipelines.skinned.layout);
-
-		vkCmdEndRenderPass( mSwapChainManager.mVkCommandBuffers[i]);
-		VK_CHECK_RESULT(vkEndCommandBuffer(mSwapChainManager.mVkCommandBuffers[i]));
+		vkCmdEndRenderPass(cmdBuffer);
+		VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
 	}
 }
 
 void VulkanManager::draw() 
 {
-	VkResult result = vkAcquireNextImageKHR(mVulkanState.device, 
-										  mVulkanState.swapChain, 
+	VkResult result = vkAcquireNextImageKHR(mState.device,
+                                            mState.swapChain,
 										  std::numeric_limits<uint64_t>::max(), 
 										  mSwapChainManager.mImageAvailableSemaphore, 
 										  VK_NULL_HANDLE, 
@@ -177,17 +150,17 @@ void VulkanManager::draw()
 		
 		VkSemaphore waitSemaphores[] = { mSwapChainManager.mImageAvailableSemaphore };
 		VkSemaphore signalSemaphores[] = { mSwapChainManager.mRenderFinishedSemaphore };
-		VkSwapchainKHR swapChains[] = { mVulkanState.swapChain };
+		VkSwapchainKHR swapChains[] = { mState.swapChain };
 		VkPipelineStageFlags stageFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = stageFlags;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &mSwapChainManager.mVkCommandBuffers[imageIndex];
+		submitInfo.pCommandBuffers = &mSwapChainManager.cmdBuffers[imageIndex];
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		VK_CHECK_RESULT(vkQueueSubmit(mVulkanState.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+		VK_CHECK_RESULT(vkQueueSubmit(mState.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 		
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -197,8 +170,7 @@ void VulkanManager::draw()
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
 
-		VK_CHECK_RESULT(vkQueuePresentKHR(mVulkanState.presentQueue, &presentInfo));
-
+		VK_CHECK_RESULT(vkQueuePresentKHR(mState.presentQueue, &presentInfo));
 	} else {
 		VK_THROW_RESULT_ERROR("Failed vkAcquireNextImageKHR", result);
 	}
@@ -206,30 +178,30 @@ void VulkanManager::draw()
 
 void VulkanManager::waitIdle() 
 {
-	vkDeviceWaitIdle(mVulkanState.device);
+	vkDeviceWaitIdle(mState.device);
 }
 
 void VulkanManager::recreateSwapChain()
 {
-/*	vkQueueWaitIdle(mVulkanState.graphicsQueue);
-	vkDeviceWaitIdle(mVulkanState.device);
+/*	vkQueueWaitIdle(mState.graphicsQueue);
+	vkDeviceWaitIdle(mState.device);
 
-	vkFreeCommandBuffers(mVulkanState.device, mVulkanState.commandPool, (uint32_t) mVkCommandBuffers.size(), mVkCommandBuffers.data());
+	vkFreeCommandBuffers(mState.device, mState.commandPool, (uint32_t) mVkCommandBuffers.size(), mVkCommandBuffers.data());
 	
 	for (auto& framebuffer : mSwapChainFramebuffers)
-		vkDestroyFramebuffer(mVulkanState.device, framebuffer, nullptr);
+		vkDestroyFramebuffer(mState.device, framebuffer, nullptr);
 
-	vkDestroyImageView(mVulkanState.device, mDepthImageView, nullptr);
-	vkDestroyImage(mVulkanState.device, mDepthImage, nullptr);
-	vkFreeMemory(mVulkanState.device, mDepthImageMem, nullptr);
+	vkDestroyImageView(mState.device, mDepthImageView, nullptr);
+	vkDestroyImage(mState.device, mDepthImage, nullptr);
+	vkFreeMemory(mState.device, mDepthImageMem, nullptr);
 	
-	vkDestroyPipeline(mVulkanState.device, mVkPipeline, nullptr);
-	vkDestroyRenderPass(mVulkanState.device, mVulkanState.renderPass, nullptr);
+	vkDestroyPipeline(mState.device, mVkPipeline, nullptr);
+	vkDestroyRenderPass(mState.device, mState.renderPass, nullptr);
 
 	for (size_t i = 0; i < mSwapChainImages.size(); ++i) {
-		vkDestroyImageView(mVulkanState.device, mSwapC	}
+		vkDestroyImageView(mState.device, mSwapC	}
 
-	vkDestroySwapchainKHR(mVulkanState.device, mVulkanState.swapChain, nullptr);
+	vkDestroySwapchainKHR(mState.device, mState.swapChain, nullptr);
 
 	createSwapChain(mWindow);
     createImageViews();

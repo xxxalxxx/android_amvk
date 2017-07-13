@@ -2,28 +2,24 @@
 
 
 #ifdef __ANDROID__
+ANativeActivity* FileManager::activity = nullptr;
 AAssetManager* FileManager::assetManager = nullptr;
 const char* FileManager::internalStoragePath = nullptr;
-Assimp::AndroidJNIIOSystem* FileManager::assimpIoSystem = nullptr;
+Assimp::AndroidJNIIOSystem* FileManager::newAssimpIOSystem() {
+    return new Assimp::AndroidJNIIOSystem(FileManager::activity);
+}
+
+
 #endif
 
 FileManager::FileManager() 
 {
-#ifdef __ANDROID__
     initBinPath();
     mEngineRoot = mBinPath + ENGINE_RELATIVE_ROOT;
     mResourceDir = mEngineRoot + RESOURCE_DIR;
     mShaderDir = mEngineRoot + SHADER_DIR;
     mModelsDir = mEngineRoot + MODELS_DIR;
     mCacheDir = mEngineRoot + CACHE_DIR;
-#else
-    initBinPath();
-	mEngineRoot = mBinPath + ENGINE_RELATIVE_ROOT;
-	mResourceDir = mEngineRoot + RESOURCE_DIR;
-	mShaderDir = mEngineRoot + SHADER_DIR;
-	mModelsDir = mEngineRoot + MODELS_DIR;
-	mCacheDir = mEngineRoot + CACHE_DIR;
-#endif
 }
 
 FileManager& FileManager::getInstance()

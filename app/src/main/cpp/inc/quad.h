@@ -2,7 +2,6 @@
 #define AMVK_QUAD_H
 #include "macro.h"
 
-
 #ifdef __ANDROID__
 #include "vulkan_wrapper.h"
 #else
@@ -21,7 +20,7 @@
 #include "vulkan_render_pass_creator.h"
 #include "texture_manager.h"
 #include "pipeline_creator.h"
-#include "pipeline_manager.h"
+#include "pipeline_cache.h"
 #include "timer.h"
 #include "camera.h"
 
@@ -57,8 +56,6 @@ public:
 	void draw(VkCommandBuffer& commandBuffer); 
 	void init();
 	void update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera);
-	void updateUniformBuffers(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera); 
-	void updatePushConstants(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera);
 
 	uint32_t numIndices;
 	
@@ -80,8 +77,6 @@ private:
 	void createUniformBuffer();
 
 	void createDescriptorSetLayout();
-	void createPipeline();
-
 
 	void createDescriptorPool();
 	void createDescriptorSet();

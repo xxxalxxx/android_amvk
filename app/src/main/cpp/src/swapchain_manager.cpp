@@ -151,7 +151,7 @@ void SwapchainManager::createDepthResources()
 
 void SwapchainManager::createFramebuffers(VkRenderPass renderPass)
 {
-	mSwapChainFramebuffers.resize(mSwapChainImageViews.size());
+	framebuffers.resize(mSwapChainImageViews.size());
 
 	VkFramebufferCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -160,7 +160,7 @@ void SwapchainManager::createFramebuffers(VkRenderPass renderPass)
 	createInfo.height = mVulkanState.swapChainExtent.height;
 	createInfo.layers = 1;
 
-	for (size_t i = 0; i < mSwapChainFramebuffers.size(); ++i) {
+	for (size_t i = 0; i < framebuffers.size(); ++i) {
 		std::array<VkImageView, 2> attachments = { 
 			mSwapChainImageViews[i],
 			mDepthImageDesc.imageView
@@ -169,7 +169,7 @@ void SwapchainManager::createFramebuffers(VkRenderPass renderPass)
 		createInfo.attachmentCount = attachments.size();
 		createInfo.pAttachments = attachments.data();
 
-		VK_CHECK_RESULT(vkCreateFramebuffer(mVulkanState.device, &createInfo, nullptr, &mSwapChainFramebuffers[i]));
+		VK_CHECK_RESULT(vkCreateFramebuffer(mVulkanState.device, &createInfo, nullptr, &framebuffers[i]));
 		LOG("FRAMEBUFFER CREATED");
 	}
 }
@@ -316,15 +316,15 @@ void SwapchainManager::createCommandPool()
 
 void SwapchainManager::createCommandBuffers()
 {
-	mVkCommandBuffers.resize(mSwapChainFramebuffers.size());
+	cmdBuffers.resize(framebuffers.size());
 
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = mVulkanState.commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t) mVkCommandBuffers.size();
+	allocInfo.commandBufferCount = (uint32_t) cmdBuffers.size();
 	
-	VK_CHECK_RESULT(vkAllocateCommandBuffers(mVulkanState.device, &allocInfo, mVkCommandBuffers.data()));
+	VK_CHECK_RESULT(vkAllocateCommandBuffers(mVulkanState.device, &allocInfo, cmdBuffers.data()));
 
 	LOG("COMMAND POOL ALLOCATED");
 
