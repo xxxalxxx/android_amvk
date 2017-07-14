@@ -10,12 +10,15 @@ cmake_minimum_required(VERSION 3.4.1)
 add_library(app-glue STATIC
              ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
-include_directories(lib src inc)
-
-
+include_directories(
+    lib
+    inc
+    inc/creator
+    inc/shape
+    src/shape)
 
 # add all files from sources dir
-file(GLOB SOURCES src/*.cpp)
+file(GLOB SOURCES src/*.cpp src/shape/*.cpp)
 
 # build the ndk-helper library
 set(ndk_helper_dir lib/ndk_helper)
@@ -29,10 +32,7 @@ add_subdirectory(${ndk_helper_dir} ndk_helper)
 set(CMAKE_TOOLCHAIN_PATH ${ANDROID_NDK}/build/cmake)
 add_definitions(-DASSIMP_ANDROID_JNIIOSYSTEM=ON)
 add_definitions(-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_PATH}/android.toolchain.cmake)
-# link_directories(prebuilt/assimp)
-# link_directories(prebuilt/assimp_io)
 # add_subdirectory(lib/assimp-master assimp)
-
 # add_subdirectory(lib/assimp/port/AndroidJNI android_jniiosystem)
 
 set(distribution_DIR ${CMAKE_SOURCE_DIR}/../../../libs)
@@ -84,7 +84,6 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
-# assimp android_jniiosystem
 target_link_libraries(
                        amvk
                        android

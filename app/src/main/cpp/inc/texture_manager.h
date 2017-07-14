@@ -2,7 +2,7 @@
 #define AMVK_TEXTURE_MANAGER_H
 #include "file_manager.h"
 #include "macro.h"
-#include "vulkan_image_creator.h"
+#include "image_helper.h"
 #include "vulkan_image_info.h"
 #include "vulkan_state.h"
 #include "texture_data.h"
@@ -13,7 +13,7 @@
 class TextureManager {
 public:
 	static TextureManager& getInstance();
-	static ImageInfo* load(	
+	static ImageInfo* load(
 			VulkanState& state, 
 			const VkCommandPool& cmdPool, 
 			const VkQueue& cmdQueue,

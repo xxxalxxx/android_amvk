@@ -8,7 +8,6 @@
 #include <vulkan/vulkan.h>
 #endif
 
-
 #include "swap_chain_desc.h"
 
 struct DeviceInfo {
@@ -41,9 +40,9 @@ struct ShaderInfo {
 };
 
 struct Pipelines {
-	PipelineInfo tquad,
-				 model,
-				 skinned;
+	PipelineInfo tquad;
+	PipelineInfo model;
+	PipelineInfo skinned;
 };
 
 struct DescriptorSets {
@@ -51,17 +50,17 @@ struct DescriptorSets {
 };
 
 struct DescriptorSetLayouts {
-	VkDescriptorSetLayout tquad,
-						  model,
-						  uniform,
-						  sampler,
-						  samplerList;
+	VkDescriptorSetLayout tquad;
+	VkDescriptorSetLayout model;
+	VkDescriptorSetLayout uniform;
+	VkDescriptorSetLayout sampler;
+	VkDescriptorSetLayout samplerList;
 };
 
 struct Shaders {
-	ShaderInfo tquad,
-			   model,
-			   skinned;
+	ShaderInfo tquad;
+	ShaderInfo model;
+	ShaderInfo skinned;
 };
 
 struct VulkanState {

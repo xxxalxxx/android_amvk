@@ -15,7 +15,7 @@
 
 #include "vulkan_state.h"
 #include "vulkan_utils.h"
-#include "vulkan_image_creator.h"
+#include "image_helper.h"
 #include "window.h"
 #include "swap_chain_desc.h"
 #include "tquad.h"
