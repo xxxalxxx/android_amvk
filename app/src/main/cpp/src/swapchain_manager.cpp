@@ -189,10 +189,14 @@ VkSurfaceFormatKHR SwapchainManager::getSurfaceFormat(const std::vector<VkSurfac
 
 VkPresentModeKHR SwapchainManager::getPresentMode(const std::vector<VkPresentModeKHR>& presentModes) const
 {
+#ifdef __ANDROID__
+    return VK_PRESENT_MODE_FIFO_KHR;
+#else
 	for (const auto& presentMode : presentModes)
 		if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
 			return presentMode;
 	return VK_PRESENT_MODE_FIFO_KHR;
+#endif
 }
 
 VkExtent2D SwapchainManager::getExtent(VkSurfaceCapabilitiesKHR& surfaceCapabilities) const

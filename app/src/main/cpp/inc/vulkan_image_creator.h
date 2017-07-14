@@ -383,6 +383,7 @@ inline void createStagedImage(
 				VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_ACCESS_SHADER_READ_BIT);
 	}
+//#endif
 
 	// Create ImageView
 

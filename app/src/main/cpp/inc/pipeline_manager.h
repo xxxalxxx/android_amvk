@@ -7,30 +7,30 @@
 #include "vulkan_state.h"
 #include "pipeline_creator.h"
 #include "pipeline_cache.h"
-#include "quad.h"
+#include "tquad.h"
 #include "model.h"
 #include "skinned.h"
 
 namespace PipelineManager
 {
 
-inline void createQuadPipeline(VulkanState& state, PipelineInfo& info)
+inline void createTQuadPipeline(VulkanState& state, PipelineInfo& info)
 {
     VkPipelineShaderStageCreateInfo stages[] = {
-            state.shaders.quad.vertex,
-            state.shaders.quad.fragment
+            state.shaders.tquad.vertex,
+            state.shaders.tquad.fragment
     };
 
     VkVertexInputBindingDescription bindingDesc = {};
     bindingDesc.binding = 0;
-    bindingDesc.stride = sizeof(Quad::Vertex);
+    bindingDesc.stride = sizeof(TQuad::Vertex);
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     //location, binding, format, offset
     VkVertexInputAttributeDescription attrDesc[] = {
-            { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Quad::Vertex, pos) },
-            { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Quad::Vertex, color) },
-            { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Quad::Vertex, texCoord) }
+            { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TQuad::Vertex, pos) },
+            { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TQuad::Vertex, color) },
+            { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(TQuad::Vertex, texCoord) }
     };
 
     auto vertexInputInfo = PipelineCreator::vertexInputState(&bindingDesc, 1, attrDesc, ARRAY_SIZE(attrDesc));
@@ -58,12 +58,12 @@ inline void createQuadPipeline(VulkanState& state, PipelineInfo& info)
             state,
             VK_SHADER_STAGE_VERTEX_BIT,
             0,
-            sizeof(Quad::PushConstants));
+            sizeof(TQuad::PushConstants));
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineCreator::layout(&state.descriptorSetLayouts.quad, 1, &pushConstantRange, 1);
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = PipelineCreator::layout(&state.descriptorSetLayouts.tquad, 1, &pushConstantRange, 1);
     VK_CHECK_RESULT(vkCreatePipelineLayout(state.device, &pipelineLayoutInfo, nullptr, &info.layout));
 
-    PipelineCacheInfo cacheInfo("quad", info.cache);
+    PipelineCacheInfo cacheInfo("tquad", info.cache);
     cacheInfo.getCache(state.device);
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -78,7 +78,7 @@ inline void createQuadPipeline(VulkanState& state, PipelineInfo& info)
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &blendState;
     pipelineInfo.pDynamicState = &dynamicInfo;
-    pipelineInfo.layout = state.pipelines.quad.layout;
+    pipelineInfo.layout = state.pipelines.tquad.layout;
     pipelineInfo.renderPass = state.renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -251,7 +251,7 @@ inline void createSkinnedPipeline(VulkanState& state, PipelineInfo& info)
 
 inline void createPipelines(VulkanState& state)
 {
-    createQuadPipeline(state, state.pipelines.quad);
+    createTQuadPipeline(state, state.pipelines.tquad);
     createModelPipeline(state, state.pipelines.model);
     createSkinnedPipeline(state, state.pipelines.skinned);
 }

@@ -25,7 +25,7 @@
 #include "swapchain_manager.h"
 #include "shader_manager.h"
 #include "descriptor_manager.h"
-#include "quad.h"
+#include "tquad.h"
 #include "model.h"
 #include "skinned.h"
 
@@ -55,7 +55,7 @@ private:
 	VulkanState mState;
 	DeviceManager mDeviceManager;
 	SwapchainManager mSwapChainManager;
-	Quad quad;
+	TQuad tquad;
 	Model suit;
 	Skinned guard;
 	Skinned dwarf;

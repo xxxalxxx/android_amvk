@@ -5,7 +5,7 @@ VulkanManager::VulkanManager(Window& window):
 	mWindow(window),
 	mDeviceManager(mState),
 	mSwapChainManager(mState, mWindow),
-	quad(mState),
+	tquad(mState),
 	suit(mState),
 	dwarf(mState),
     guard(mState),
@@ -40,7 +40,7 @@ void VulkanManager::init()
     PipelineManager::createPipelines(mState);
 
 
-	quad.init();
+	tquad.init();
 
     suit.init(FileManager::getModelsPath("nanosuit/nanosuit.obj"),
               Model::DEFAULT_FLAGS | aiProcess_FlipUVs);
@@ -76,7 +76,7 @@ void VulkanManager::init()
 void VulkanManager::updateUniformBuffers(const Timer& timer, Camera& camera)
 {
 	CmdPass cmd(mState.device, mState.commandPool, mState.graphicsQueue);
-	quad.update(cmd.buffer, timer, camera);
+	tquad.update(cmd.buffer, timer, camera);
     suit.update(cmd.buffer, timer, camera);
 	dwarf.update(cmd.buffer, timer, camera);
 	guard.update(cmd.buffer, timer, camera);
@@ -124,7 +124,7 @@ void VulkanManager::buildCommandBuffers(const Timer &timer, Camera &camera)
 		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 			
-		quad.draw(cmdBuffer);
+		tquad.draw(cmdBuffer);
 		suit.draw(cmdBuffer, mState.pipelines.model.pipeline, mState.pipelines.model.layout);
 		dwarf.draw(cmdBuffer, mState.pipelines.skinned.pipeline, mState.pipelines.skinned.layout);
         guard.draw(cmdBuffer, mState.pipelines.skinned.pipeline, mState.pipelines.skinned.layout);

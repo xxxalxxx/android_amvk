@@ -130,8 +130,6 @@ protected:
 
 	VulkanState& mState;
 	BufferInfo mCommonBufferInfo;
-	BufferInfo mCommonStagingBufferInfo;
-
 	std::string mPath, mFolder;
 	std::unordered_map<uint32_t, Material> mMaterialIndexToMaterial;
 };

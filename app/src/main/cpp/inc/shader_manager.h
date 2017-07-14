@@ -14,8 +14,8 @@ inline void createShaders(VulkanState& state)
 {
 	Shaders& shaders = state.shaders;
 	
-	shaders.quad.vertex = PipelineCreator::shaderStage(state.device, "quad.vert", VK_SHADER_STAGE_VERTEX_BIT);
-	shaders.quad.fragment = PipelineCreator::shaderStage(state.device, "quad.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaders.tquad.vertex = PipelineCreator::shaderStage(state.device, "tquad.vert", VK_SHADER_STAGE_VERTEX_BIT);
+	shaders.tquad.fragment = PipelineCreator::shaderStage(state.device, "tquad.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	shaders.model.vertex = PipelineCreator::shaderStage(state.device, "model.vert", VK_SHADER_STAGE_VERTEX_BIT);
 	shaders.model.fragment = PipelineCreator::shaderStage(state.device, "model.frag", VK_SHADER_STAGE_FRAGMENT_BIT);

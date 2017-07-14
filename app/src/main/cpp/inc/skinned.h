@@ -162,7 +162,7 @@ protected:
 
 	VulkanState& mState;
 	BufferInfo mCommonBufferInfo;
-	BufferInfo mCommonStagingBufferInfo;
+//	BufferInfo mCommonStagingBufferInfo;
 
 	std::string mPath, mFolder;
 	ModelFlags mModelFlags;

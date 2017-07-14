@@ -24,7 +24,7 @@
 #include "timer.h"
 #include "camera.h"
 
-class Quad {
+class TQuad {
 public:
 	struct Vertex {
 		glm::vec3 pos;
@@ -44,15 +44,10 @@ public:
 		//glm::mat4 proj;
 	};
 
-	static uint32_t const VERTEX_SIZE = sizeof(Vertex);
-	static uint32_t const UBO_SIZE = sizeof(UBO);
-	static uint32_t const PUSH_CONST_SIZE = sizeof(PushConstants);
-
-
 	static void createPipeline(VulkanState& state);
 
-	Quad(VulkanState& vulkanState);
-	~Quad();
+	TQuad(VulkanState& vulkanState);
+	~TQuad();
 	void draw(VkCommandBuffer& commandBuffer); 
 	void init();
 	void update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera);
@@ -63,9 +58,8 @@ public:
 				 mIndexBufferOffset, 
 				 mUniformBufferOffset;
 
-	VulkanState& mVulkanState;
+	VulkanState& mState;
 	BufferInfo mCommonBufferInfo;
-	BufferInfo mCommonStagingBufferInfo;
 	BufferInfo mVertexBufferDesc, mIndexBufferDesc, mUniformBufferDesc, mUniformStagingBufferDesc;
 	ImageInfo *mTextureDesc;
 	VkDescriptorSet mVkDescriptorSet;

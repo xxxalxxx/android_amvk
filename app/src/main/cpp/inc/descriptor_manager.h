@@ -51,7 +51,7 @@ inline void createQuadDescriptorSetLayout(VulkanState& state)
 	descSetLayoutInfo.bindingCount = ARRAY_SIZE(bindings);
 	descSetLayoutInfo.pBindings = bindings;
 
-	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(state.device, &descSetLayoutInfo, nullptr, &state.descriptorSetLayouts.quad));
+	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(state.device, &descSetLayoutInfo, nullptr, &state.descriptorSetLayouts.tquad));
 }
 
 

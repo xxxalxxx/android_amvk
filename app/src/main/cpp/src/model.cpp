@@ -20,7 +20,6 @@ Model::Model(VulkanState& vulkanState):
 	mNumSamplerDescriptors(0),
 	mState(vulkanState),
 	mCommonBufferInfo(mState.device),
-	mCommonStagingBufferInfo(mState.device),
 	mPath(""),
 	mFolder("")
 {
@@ -172,22 +171,23 @@ void Model::createCommonBuffer(const std::vector<Vertex>& vertices, const std::v
 	indexBufferOffset = vertexBufferOffset + vertexBufferSize;
 
 	mCommonBufferInfo.size = vertexBufferSize + indexBufferSize + uniformBufferSize;
-	mCommonStagingBufferInfo.size = mCommonBufferInfo.size;
-	BufferHelper::createStagingBuffer(mState, mCommonStagingBufferInfo);
+	BufferInfo staging(mState.device);
+	staging.size = mCommonBufferInfo.size;
+	BufferHelper::createStagingBuffer(mState, staging);
 	
 	UBO ubo = {};
 	char* data;
-	vkMapMemory(mState.device, mCommonStagingBufferInfo.memory, 0, mCommonStagingBufferInfo.size, 0, (void**) &data);
+	vkMapMemory(mState.device, staging.memory, 0, staging.size, 0, (void**) &data);
 	memcpy(data + uniformBufferOffset, &ubo, uniformBufferSize);
 	memcpy(data + vertexBufferOffset, vertices.data(), vertexBufferSize);
 	memcpy(data + indexBufferOffset, indices.data(), indexBufferSize);
-	vkUnmapMemory(mState.device, mCommonStagingBufferInfo.memory);
+	vkUnmapMemory(mState.device, staging.memory);
 
 	BufferHelper::createCommonBuffer(mState, mCommonBufferInfo);
 
 	BufferHelper::copyBuffer(
 			mState,
-			mCommonStagingBufferInfo.buffer, 
+			staging.buffer, 
 			mCommonBufferInfo.buffer, 
 			mCommonBufferInfo.size);
 }

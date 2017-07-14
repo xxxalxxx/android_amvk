@@ -1,9 +1,8 @@
-#include "quad.h"
+#include "tquad.h"
 
-Quad::Quad(VulkanState& vulkanState):
-	mVulkanState(vulkanState), 
+TQuad::TQuad(VulkanState& vulkanState):
+        mState(vulkanState),
 	mCommonBufferInfo(vulkanState.device),
-	mCommonStagingBufferInfo(vulkanState.device),
 	mVertexBufferDesc(vulkanState.device),
 	mIndexBufferDesc(vulkanState.device),
 	mUniformBufferDesc(vulkanState.device),
@@ -12,25 +11,25 @@ Quad::Quad(VulkanState& vulkanState):
 	
 }
 
-Quad::~Quad() 
+TQuad::~TQuad()
 {
 	mTextureDesc = nullptr;
 }
 
-void Quad::init()
+void TQuad::init()
 {
 	TextureDesc textureDesc(FileManager::getResourcePath("texture/statue.jpg"));//"texture/statue.jpg"));
 	mTextureDesc = TextureManager::load(
-			mVulkanState, 
-			mVulkanState.commandPool, 
-			mVulkanState.graphicsQueue, 
+            mState,
+            mState.commandPool,
+            mState.graphicsQueue,
 			textureDesc);
 
 	createBuffers();
 	createDescriptorSet();
 }
 
-void Quad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera) 
+void TQuad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& camera)
 {
 
 	UBO ubo = {};
@@ -39,12 +38,12 @@ void Quad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& ca
 	ubo.proj = camera.proj();
 	/*
 	Buffer update via copy
-	BufferHelper::mapMemory(mVulkanState, mCommonStagingBufferInfo.memory, mUniformBufferOffset, sizeof(ubo), &ubo);
+	BufferHelper::mapMemory(mVulkanState, staging.memory, mUniformBufferOffset, sizeof(ubo), &ubo);
 	BufferHelper::copyBuffer(
 			mVulkanState.device,
 			mVulkanState.commandPool,
 			mVulkanState.graphicsQueue,
-			mCommonStagingBufferInfo.buffer,
+			staging.buffer,
 			mCommonBufferInfo.buffer,
 			mUniformBufferOffset,
 			sizeof(ubo));
@@ -56,7 +55,7 @@ void Quad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& ca
 			commandBuffer,
 			mCommonBufferInfo.buffer,
 			mUniformBufferOffset,
-			UBO_SIZE,
+			sizeof(UBO),
 			&ubo);
 	/*
 	void* data;
@@ -91,9 +90,9 @@ void Quad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& ca
 } 
 
 
-void Quad::draw(VkCommandBuffer& commandBuffer) 
+void TQuad::draw(VkCommandBuffer& commandBuffer)
 {
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mVulkanState.pipelines.quad.pipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mState.pipelines.tquad.pipeline);
 
 	VkDeviceSize offset = mVertexBufferOffset;
 	VkBuffer& commonBuff = mCommonBufferInfo.buffer;
@@ -105,8 +104,8 @@ void Quad::draw(VkCommandBuffer& commandBuffer)
 	
 	vkCmdBindDescriptorSets(
 			commandBuffer, 
-			VK_PIPELINE_BIND_POINT_GRAPHICS, 
-			mVulkanState.pipelines.quad.layout, 
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+            mState.pipelines.tquad.layout,
 			0, 
 			1, 
 			&mVkDescriptorSet, 
@@ -116,7 +115,7 @@ void Quad::draw(VkCommandBuffer& commandBuffer)
 	vkCmdDrawIndexed(commandBuffer, numIndices, 1, 0, 0, 0);
 }
 
-void Quad::createBuffers() 
+void TQuad::createBuffers()
 {
 	// Vertex
 
@@ -147,7 +146,7 @@ void Quad::createBuffers()
 	
 	// Uniform
 	//TODO: check how to add uniform without recopying same buffer
-	VkDeviceSize uniformBufferSize = UBO_SIZE;
+	VkDeviceSize uniformBufferSize = sizeof(UBO);
 	UBO ubo = {};
 	
 	mUniformBufferOffset = 0;
@@ -158,26 +157,27 @@ void Quad::createBuffers()
 	//mIndexBufferOffset = vertexBufferSize;
 	//mUniformBufferOffset = vertexBufferSize + indexBufferSize;
 	mCommonBufferInfo.size = vertexBufferSize + indexBufferSize + uniformBufferSize;
-	mCommonStagingBufferInfo.size = mCommonBufferInfo.size;
-	BufferHelper::createStagingBuffer(mVulkanState, mCommonStagingBufferInfo);
+	BufferInfo staging(mState.device);
+	staging.size = mCommonBufferInfo.size;
+	BufferHelper::createStagingBuffer(mState, staging);
 	
 	char* data;
-	vkMapMemory(mVulkanState.device, mCommonStagingBufferInfo.memory, 0, mCommonStagingBufferInfo.size, 0, (void**) &data);
+	vkMapMemory(mState.device, staging.memory, 0, staging.size, 0, (void**) &data);
 	memcpy(data + mUniformBufferOffset, &ubo, (size_t) uniformBufferSize);
 	memcpy(data + mVertexBufferOffset, vertices.data(), vertexBufferSize);
 	memcpy(data + mIndexBufferOffset, indices.data(), indexBufferSize);
-	vkUnmapMemory(mVulkanState.device, mCommonStagingBufferInfo.memory);
+	vkUnmapMemory(mState.device, staging.memory);
 
-	BufferHelper::createCommonBuffer(mVulkanState, mCommonBufferInfo);
+	BufferHelper::createCommonBuffer(mState, mCommonBufferInfo);
 
 	BufferHelper::copyBuffer(
-			mVulkanState,
-			mCommonStagingBufferInfo.buffer, 
+            mState,
+			staging.buffer, 
 			mCommonBufferInfo.buffer, 
 			mCommonBufferInfo.size);
 }
 
-void Quad::createVertexBuffer() 
+void TQuad::createVertexBuffer()
 {
 	const std::vector<Vertex> vertices = {
 	    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
@@ -194,20 +194,20 @@ void Quad::createVertexBuffer()
 
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 	mVertexBufferDesc.size = bufferSize;
-	BufferInfo stagingDesc(mVulkanState.device, bufferSize);
+	BufferInfo stagingDesc(mState.device, bufferSize);
 
-	BufferHelper::createStagingBuffer(mVulkanState,stagingDesc);
-	BufferHelper::mapMemory(mVulkanState, stagingDesc, vertices.data());
-	BufferHelper::createVertexBuffer(mVulkanState, mVertexBufferDesc);
+	BufferHelper::createStagingBuffer(mState,stagingDesc);
+	BufferHelper::mapMemory(mState, stagingDesc, vertices.data());
+	BufferHelper::createVertexBuffer(mState, mVertexBufferDesc);
 
 	BufferHelper::copyBuffer(
-			mVulkanState,
+            mState,
 			stagingDesc.buffer, 
 			mVertexBufferDesc.buffer, 
 			bufferSize);
 }
 
-void Quad::createIndexBuffer()
+void TQuad::createIndexBuffer()
 {
 	const std::vector<uint32_t> indices = {
 	    0, 1, 2, 2, 3, 0,
@@ -217,45 +217,45 @@ void Quad::createIndexBuffer()
 	numIndices = indices.size(); 
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 	mIndexBufferDesc.size = bufferSize;
-	BufferInfo stagingDesc(mVulkanState.device, bufferSize);
+	BufferInfo stagingDesc(mState.device, bufferSize);
 
-	BufferHelper::createStagingBuffer(mVulkanState, stagingDesc);
-	BufferHelper::mapMemory(mVulkanState, stagingDesc, indices.data());
-	BufferHelper::createIndexBuffer(mVulkanState,mIndexBufferDesc);
+	BufferHelper::createStagingBuffer(mState, stagingDesc);
+	BufferHelper::mapMemory(mState, stagingDesc, indices.data());
+	BufferHelper::createIndexBuffer(mState,mIndexBufferDesc);
 	
 	BufferHelper::copyBuffer(
-			mVulkanState,
+            mState,
 			stagingDesc.buffer, 
 			mIndexBufferDesc.buffer, 
 			bufferSize);
 }
 
-void Quad::createUniformBuffer()
+void TQuad::createUniformBuffer()
 {	
-	VkDeviceSize bufSize = UBO_SIZE;
+	VkDeviceSize bufSize = sizeof(UBO);
 
 	mUniformStagingBufferDesc.size = bufSize;
 	mUniformBufferDesc.size = bufSize;
 
-	BufferHelper::createStagingBuffer(mVulkanState, mUniformStagingBufferDesc);
-	BufferHelper::createUniformBuffer(mVulkanState, mUniformBufferDesc);
+	BufferHelper::createStagingBuffer(mState, mUniformStagingBufferDesc);
+	BufferHelper::createUniformBuffer(mState, mUniformBufferDesc);
 }
 
-void Quad::createDescriptorSet() 
+void TQuad::createDescriptorSet()
 {
-	VkDescriptorSetLayout layouts[] = { mVulkanState.descriptorSetLayouts.quad };
+	VkDescriptorSetLayout layouts[] = { mState.descriptorSetLayouts.tquad };
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = mVulkanState.descriptorPool;
+	allocInfo.descriptorPool = mState.descriptorPool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = layouts;
 
-	VK_CHECK_RESULT(vkAllocateDescriptorSets(mVulkanState.device, &allocInfo, &mVkDescriptorSet));
+	VK_CHECK_RESULT(vkAllocateDescriptorSets(mState.device, &allocInfo, &mVkDescriptorSet));
 
 	VkDescriptorBufferInfo buffInfo = {};
 	buffInfo.buffer = mCommonBufferInfo.buffer;
 	buffInfo.offset = mUniformBufferOffset;
-	buffInfo.range = UBO_SIZE;
+	buffInfo.range = sizeof(UBO);
 
 	VkDescriptorImageInfo imageInfo = {};
 	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -280,7 +280,7 @@ void Quad::createDescriptorSet()
 	writeSets[1].descriptorCount = 1;
 	writeSets[1].pImageInfo = &imageInfo;
 
-	vkUpdateDescriptorSets(mVulkanState.device, writeSets.size(), writeSets.data(), 0, nullptr);
+	vkUpdateDescriptorSets(mState.device, writeSets.size(), writeSets.data(), 0, nullptr);
 }
 
 
