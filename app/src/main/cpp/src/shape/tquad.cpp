@@ -1,6 +1,6 @@
 #include "tquad.h"
 
-TQuad::TQuad(VulkanState& vulkanState):
+TQuad::TQuad(State& vulkanState):
         mState(vulkanState),
 	mCommonBufferInfo(vulkanState.device),
 	mVertexBufferDesc(vulkanState.device),
@@ -18,7 +18,7 @@ TQuad::~TQuad()
 
 void TQuad::init()
 {
-	TextureDesc textureDesc(FileManager::getResourcePath("texture/statue.jpg"));//"texture/statue.jpg"));
+	TextureDesc textureDesc(FileManager::getResourcePath("texture/statue.jpg"));
 	mTextureDesc = TextureManager::load(
             mState,
             mState.commandPool,
@@ -36,20 +36,20 @@ void TQuad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& c
 	ubo.model = glm::mat4();
 	ubo.view = camera.view();
 	ubo.proj = camera.proj();
-	/*
+		/*
 	Buffer update via copy
-	BufferHelper::mapMemory(mVulkanState, staging.memory, mUniformBufferOffset, sizeof(ubo), &ubo);
+	BufferHelper::mapMemory(mState, staging.memory, mUniformBufferOffset, sizeof(ubo), &ubo);
 	BufferHelper::copyBuffer(
-			mVulkanState.device,
-			mVulkanState.commandPool,
-			mVulkanState.graphicsQueue,
+			mState.device,
+			mState.commandPool,
+			mState.graphicsQueue,
 			staging.buffer,
 			mCommonBufferInfo.buffer,
 			mUniformBufferOffset,
 			sizeof(ubo));
 	*/
 
-	//CmdPass cmdPass(mVulkanState.device, mVulkanState.commandPool, mVulkanState.graphicsQueue);
+	//CmdPass cmdPass(mState.device, mState.commandPool, mState.graphicsQueue);
 
 	vkCmdUpdateBuffer(
 			commandBuffer,
@@ -59,12 +59,12 @@ void TQuad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& c
 			&ubo);
 	/*
 	void* data;
-	vkMapMemory(mVulkanState.device, mUniformStagingBufferDesc.memory, 0, sizeof(ubo), 0, &data);
+	vkMapMemory(mState.device, mUniformStagingBufferDesc.memory, 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(mVulkanState.device, mUniformStagingBufferDesc.memory);
+	vkUnmapMemory(mState.device, mUniformStagingBufferDesc.memory);
 
 	BufferHelper::copyBuffer(
-			mVulkanState,
+			mState,
 			mUniformStagingBufferDesc.buffer,
 			mUniformBufferDesc.buffer,
 			sizeof(ubo));
@@ -81,7 +81,7 @@ void TQuad::update(VkCommandBuffer& commandBuffer, const Timer& timer, Camera& c
 	pushConstants.proj = camera.proj();
 	vkCmdPushConstants(
 			commandBuffer,
-			mVulkanState.pipelines.quad.layout,
+			mState.pipelines.quad.layout,
 			VK_SHADER_STAGE_VERTEX_BIT,
 			0,
 			sizeof(PushConstants),
@@ -120,13 +120,20 @@ void TQuad::createBuffers()
 	// Vertex
 
 	const std::vector<Vertex> vertices = {
-	    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+	    //{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		//{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		//{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		//{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+
+		{{-1.0f, -1.0f, 0.1f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{1.0f, -1.0f, 0.1f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{1.0f, 1.0f, 0.1f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-1.0f, 1.0f, 0.1f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+
 
 	    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-
 		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
 		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
 		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
@@ -180,13 +187,18 @@ void TQuad::createBuffers()
 void TQuad::createVertexBuffer()
 {
 	const std::vector<Vertex> vertices = {
-	    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+	    //{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		//{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		//{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		//{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+		{{-1.0f, -1.0f, 0.1f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{1.0f, -1.0f, 0.1f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{1.0f, 1.0f, 0.1f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-1.0f, 1.0f, 0.1f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
 
 	    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-
 		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
 		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
 		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}

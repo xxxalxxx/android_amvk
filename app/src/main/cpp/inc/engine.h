@@ -5,7 +5,7 @@
 
 #include "macro.h"
 #include "task_manager.h"
-#include "vulkan_manager.h"
+#include "renderer.h"
 #include "window.h"
 #include "timer.h"
 #include "file_manager.h"
@@ -34,14 +34,14 @@ public:
 	void handleMovement(double dt);
 	Window& getWindow();
 	TaskManager& getTaskManager();
-	VulkanManager& getVulkanManager();
+	Renderer& getRenderer();
 	Timer& getTimer();
 	Camera& getCamera();
 private:
 	Window mWindow;
 	Camera mCamera;
 	TaskManager mTaskManager;
-	VulkanManager mVulkanManager;
+	Renderer mRenderer;
 	Timer mTimer;
 
 

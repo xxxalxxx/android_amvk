@@ -2,11 +2,7 @@
 #define AMVK_VULKAN_UTILS_H
 
 
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
-#endif
+#include "vulkan.h"
 
 #include <cstdio>
 #include <stdexcept>

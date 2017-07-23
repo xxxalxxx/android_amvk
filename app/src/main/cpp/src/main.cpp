@@ -7,8 +7,7 @@
 #include <assimp/scene.h>
  */
 #include "macro.h"
-#if defined(__ANDROID__)
-
+#ifdef __ANDROID__
 #include "vulkan_wrapper.h"
 #include <jni.h>
 #include <android/looper.h>
@@ -42,11 +41,11 @@ void android_main(android_app* state) {
 
     Window& window = engine.getWindow();
     InputManager& inputManager = window.getInputManager();
-    VulkanManager& vulkanManager = engine.getVulkanManager();
+    Renderer& renderer = engine.getRenderer();
     Timer& timer = engine.getTimer();
     Camera& camera = engine.getCamera();
 
-    //vulkanManager.buildCommandBuffers(timer, camera);
+    //renderer.buildCommandBuffers(timer, camera);
 
     while (1) {
         // Read all pending events.
@@ -64,11 +63,10 @@ void android_main(android_app* state) {
             if (state->destroyRequested != 0) {
                 LOG("DESTOROY");
                 if (engine.isReady && initialized) {
-                    vulkanManager.waitIdle();
+                    renderer.waitIdle();
                 }
                 return;
             }
-            LOG("EVENT");
         }
 
 
@@ -82,8 +80,8 @@ void android_main(android_app* state) {
 
             double dt = timer.tick();
             engine.handleMovement(dt);
-            vulkanManager.updateUniformBuffers(timer, camera);
-            vulkanManager.draw();
+            renderer.updateUniformBuffers(timer, camera);
+            renderer.draw();
         }
     }
 
@@ -132,20 +130,22 @@ int main() {
 
     Window& window = engine.getWindow();
     InputManager& inputManager = window.getInputManager();
-    VulkanManager& vulkanManager = engine.getVulkanManager();
+    Renderer& renderer = engine.getRenderer();
     Timer& timer = engine.getTimer();
     Camera& camera = engine.getCamera();
 
-    vulkanManager.buildCommandBuffers(timer, camera);
+	renderer.buildGBuffers(timer, camera);
+    renderer.buildCommandBuffers(timer, camera);
 
     while (window.isOpen()) {
         inputManager.pollEvents();
         double dt = timer.tick();
         engine.handleMovement(dt);
-        vulkanManager.updateUniformBuffers(timer, camera);
-        vulkanManager.draw();
+        renderer.updateUniformBuffers(timer, camera);
+	//	renderer.buildCommandBuffers(timer, camera);
+        renderer.draw();
     }
-    vulkanManager.waitIdle();
+    renderer.waitIdle();
     return 0;
 }
 

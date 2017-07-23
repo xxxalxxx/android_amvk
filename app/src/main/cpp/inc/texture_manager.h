@@ -3,8 +3,8 @@
 #include "file_manager.h"
 #include "macro.h"
 #include "image_helper.h"
-#include "vulkan_image_info.h"
-#include "vulkan_state.h"
+#include "image_info.h"
+#include "state.h"
 #include "texture_data.h"
 #include <stb/stb_image.h>
 #include <unordered_map>
@@ -14,7 +14,7 @@ class TextureManager {
 public:
 	static TextureManager& getInstance();
 	static ImageInfo* load(
-			VulkanState& state, 
+			State& state,
 			const VkCommandPool& cmdPool, 
 			const VkQueue& cmdQueue,
 			const TextureDesc& textureDesc);

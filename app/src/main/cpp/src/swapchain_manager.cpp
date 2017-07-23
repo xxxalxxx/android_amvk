@@ -1,7 +1,7 @@
 #include "swapchain_manager.h"
 
-SwapchainManager::SwapchainManager(VulkanState& vulkanState, Window& window):
-	mVulkanState(vulkanState), 
+SwapchainManager::SwapchainManager(State& vulkanState, Window& window):
+	mState(vulkanState),
 	mWindow(window),
 	mDepthImageDesc(vulkanState.device)
 {
@@ -19,10 +19,10 @@ void SwapchainManager::createSurface()
 	VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
 	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
 	surfaceCreateInfo.window =  mWindow.androidNativeWindow;
-	VK_CHECK_RESULT(vkCreateAndroidSurfaceKHR(mVulkanState.instance, &surfaceCreateInfo, NULL, &mVulkanState.surface));
+	VK_CHECK_RESULT(vkCreateAndroidSurfaceKHR(mState.instance, &surfaceCreateInfo, NULL, &mState.surface));
 	LOG("Android surface created");
 #else
-	VK_CHECK_RESULT(glfwCreateWindowSurface(mVulkanState.instance, mWindow.mGlfwWindow, nullptr, &mVulkanState.surface));
+	VK_CHECK_RESULT(glfwCreateWindowSurface(mState.instance, mWindow.mGlfwWindow, nullptr, &mState.surface));
 
 	if (glfwVulkanSupported() == GLFW_FALSE)
 		throw std::runtime_error("Vulkan is not supported by GLFW. Cannot create a surface");
@@ -31,22 +31,20 @@ void SwapchainManager::createSurface()
 
 void SwapchainManager::createSwapChain()
 {
-	//(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities);
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	LOG("Before surface capabilities");
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mVulkanState.physicalDevice, mVulkanState.surface, &surfaceCapabilities);
-	LOG("After surface capabilities");
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mState.physicalDevice, mState.surface, &surfaceCapabilities);
 
-	VkSurfaceFormatKHR surfaceFormat = getSurfaceFormat(mVulkanState.swapChainDesc.surfaceFormats);
-	VkPresentModeKHR presentMode = getPresentMode(mVulkanState.swapChainDesc.presentModes);
-	VkExtent2D extent = getExtent(mVulkanState.swapChainDesc.surfaceCapabilities); 
+	VkSurfaceFormatKHR surfaceFormat = getSurfaceFormat(mState.deviceInfo.surfaceFormats);
+	VkPresentModeKHR presentMode = getPresentMode(mState.deviceInfo.presentModes);
+	VkExtent2D extent = getExtent(mState.deviceInfo.surfaceCapabilities);
+    LOG("EXTENT width: %u, height: %u", extent.width, extent.height);
 
-	uint32_t numImages = mVulkanState.swapChainDesc.surfaceCapabilities.minImageCount;
-	numImages = std::min(numImages + 1, mVulkanState.swapChainDesc.surfaceCapabilities.maxImageCount);
+	uint32_t numImages = mState.deviceInfo.surfaceCapabilities.minImageCount;
+	numImages = std::min(numImages + 1, mState.deviceInfo.surfaceCapabilities.maxImageCount);
 	
 	VkSwapchainCreateInfoKHR createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = mVulkanState.surface;
+	createInfo.surface = mState.surface;
 	createInfo.minImageCount = numImages;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -54,10 +52,10 @@ void SwapchainManager::createSwapChain()
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	
-	if (mVulkanState.graphicsQueueIndex != mVulkanState.presentQueueIndex) {
+	if (mState.graphicsQueueIndex != mState.presentQueueIndex) {
 		uint32_t queueFamilyIndices[] = { 
-			(uint32_t) mVulkanState.graphicsQueueIndex, 
-			(uint32_t) mVulkanState.presentQueueIndex 
+			(uint32_t) mState.graphicsQueueIndex,
+			(uint32_t) mState.presentQueueIndex
 		};
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
@@ -68,7 +66,7 @@ void SwapchainManager::createSwapChain()
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
 
-	createInfo.preTransform = mVulkanState.swapChainDesc.surfaceCapabilities.currentTransform;
+	createInfo.preTransform = mState.deviceInfo.surfaceCapabilities.currentTransform;
 
 	VkCompositeAlphaFlagBitsKHR compositeAlpha;
 	if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
@@ -78,19 +76,19 @@ void SwapchainManager::createSwapChain()
 	createInfo.compositeAlpha = compositeAlpha;
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
-	VkSwapchainKHR oldSwapChain = mVulkanState.swapChain;
+	VkSwapchainKHR oldSwapChain = mState.swapChain;
 	createInfo.oldSwapchain = oldSwapChain;
 	VkSwapchainKHR swapChain;
 	LOG("BEFORE SWAPCHAIN");
-	VK_CHECK_RESULT(vkCreateSwapchainKHR(mVulkanState.device, &createInfo, nullptr, &swapChain));
+	VK_CHECK_RESULT(vkCreateSwapchainKHR(mState.device, &createInfo, nullptr, &swapChain));
 	LOG("AFTER SWAPCHAIN");
-	mVulkanState.swapChain = swapChain;
-	vkGetSwapchainImagesKHR(mVulkanState.device, mVulkanState.swapChain, &numImages, nullptr);
+	mState.swapChain = swapChain;
+	vkGetSwapchainImagesKHR(mState.device, mState.swapChain, &numImages, nullptr);
 	mSwapChainImages.resize(numImages);
-	vkGetSwapchainImagesKHR(mVulkanState.device, mVulkanState.swapChain, &numImages, mSwapChainImages.data());
+	vkGetSwapchainImagesKHR(mState.device, mState.swapChain, &numImages, mSwapChainImages.data());
 	
-	mVulkanState.swapChainImageFormat = surfaceFormat.format;
-	mVulkanState.swapChainExtent = extent;
+	mState.swapChainImageFormat = surfaceFormat.format;
+	mState.swapChainExtent = extent;
 
 	LOG("SWAP CHAIN CREATED");
 }
@@ -100,9 +98,9 @@ void SwapchainManager::createImageViews()
 	mSwapChainImageViews.resize(mSwapChainImages.size());
 	for (size_t i = 0; i < mSwapChainImages.size(); ++i) {
 		ImageHelper::createImageView(
-				mVulkanState.device, 
+				mState.device,
 				mSwapChainImages[i], 
-				mVulkanState.swapChainImageFormat, 
+				mState.swapChainImageFormat,
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				mSwapChainImageViews[i]);
 
@@ -113,16 +111,16 @@ void SwapchainManager::createImageViews()
 void SwapchainManager::createDepthResources() 
 {
 	VkFormat depthFormat = ImageHelper::findSupportedFormat(
-			mVulkanState.physicalDevice,
+			mState.physicalDevice,
 			{VK_FORMAT_D24_UNORM_S8_UINT},
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	mDepthImageDesc.width = mVulkanState.swapChainExtent.width;
-	mDepthImageDesc.height = mVulkanState.swapChainExtent.height;
+	mDepthImageDesc.width = mState.swapChainExtent.width;
+	mDepthImageDesc.height = mState.swapChainExtent.height;
 
 	ImageHelper::createImage(
-			mVulkanState, 
+			mState,
 			mDepthImageDesc, 
 			depthFormat, 
 			VK_IMAGE_TILING_OPTIMAL,
@@ -131,13 +129,13 @@ void SwapchainManager::createDepthResources()
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ImageHelper::createImageView(
-			mVulkanState.device,
+			mState.device,
 			mDepthImageDesc,
 			depthFormat,
 			VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	ImageHelper::transitionLayout(
-			mVulkanState, 
+			mState,
 			mDepthImageDesc.image, 
 			depthFormat, 
 			VK_IMAGE_LAYOUT_UNDEFINED, 
@@ -155,9 +153,9 @@ void SwapchainManager::createFramebuffers(VkRenderPass renderPass)
 
 	VkFramebufferCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	createInfo.renderPass = mVulkanState.renderPass;
-	createInfo.width = mVulkanState.swapChainExtent.width;
-	createInfo.height = mVulkanState.swapChainExtent.height;
+	createInfo.renderPass = mState.renderPass;
+	createInfo.width = mState.swapChainExtent.width;
+	createInfo.height = mState.swapChainExtent.height;
 	createInfo.layers = 1;
 
 	for (size_t i = 0; i < framebuffers.size(); ++i) {
@@ -169,7 +167,7 @@ void SwapchainManager::createFramebuffers(VkRenderPass renderPass)
 		createInfo.attachmentCount = attachments.size();
 		createInfo.pAttachments = attachments.data();
 
-		VK_CHECK_RESULT(vkCreateFramebuffer(mVulkanState.device, &createInfo, nullptr, &framebuffers[i]));
+		VK_CHECK_RESULT(vkCreateFramebuffer(mState.device, &createInfo, nullptr, &framebuffers[i]));
 		LOG("FRAMEBUFFER CREATED");
 	}
 }
@@ -212,42 +210,10 @@ VkExtent2D SwapchainManager::getExtent(VkSurfaceCapabilitiesKHR& surfaceCapabili
 	return extent;
 }
 
-
-SwapChainDesc SwapchainManager::getSwapChainDesc(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface)
-{
-	SwapChainDesc swapChainDesc = {};
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &swapChainDesc.surfaceCapabilities);
-	uint32_t numSurfaceFormats;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &numSurfaceFormats, nullptr);
-	
-	if (numSurfaceFormats > 0) {
-		swapChainDesc.surfaceFormats.resize(numSurfaceFormats);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(
-				physicalDevice, 
-				surface, 
-				&numSurfaceFormats, 
-				swapChainDesc.surfaceFormats.data());
-	}
-
-	uint32_t numPresentModes;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &numPresentModes, nullptr);
-
-	if (numPresentModes > 0) {
-		swapChainDesc.presentModes.resize(numPresentModes);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(
-				physicalDevice, 
-				surface, 
-				&numPresentModes,
-				swapChainDesc.presentModes.data());
-	}
-
-	return swapChainDesc;
-}
-
 void SwapchainManager::createRenderPass()
 {
 	VkAttachmentDescription att = {};
-	att.format = mVulkanState.swapChainImageFormat;
+	att.format = mState.swapChainImageFormat;
 	att.samples = VK_SAMPLE_COUNT_1_BIT;
 	att.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	att.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -257,12 +223,14 @@ void SwapchainManager::createRenderPass()
 	att.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentDescription depthAtt = {};
-	depthAtt.format = ImageHelper::findDepthFormat(mVulkanState.physicalDevice);
+	depthAtt.format = ImageHelper::findDepthFormat(mState.physicalDevice);
 	depthAtt.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAtt.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depthAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+	//depthAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	//depthAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAtt.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	depthAtt.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -303,7 +271,7 @@ void SwapchainManager::createRenderPass()
 	createInfo.dependencyCount = 1;
 	createInfo.pDependencies = &dependancy;
 
-	VK_CHECK_RESULT(vkCreateRenderPass(mVulkanState.device, &createInfo, nullptr, &mVulkanState.renderPass));
+	VK_CHECK_RESULT(vkCreateRenderPass(mState.device, &createInfo, nullptr, &mState.renderPass));
 	LOG("RENDER PASS CREATED");
 }
 
@@ -312,9 +280,9 @@ void SwapchainManager::createCommandPool()
 {
 	VkCommandPoolCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	createInfo.queueFamilyIndex = mVulkanState.graphicsQueueIndex; 
+	createInfo.queueFamilyIndex = mState.graphicsQueueIndex;
 	createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	VK_CHECK_RESULT(vkCreateCommandPool(mVulkanState.device, &createInfo, nullptr, &mVulkanState.commandPool));
+	VK_CHECK_RESULT(vkCreateCommandPool(mState.device, &createInfo, nullptr, &mState.commandPool));
 	LOG("COMMAND BUFFER CREATED");
 }
 
@@ -324,22 +292,23 @@ void SwapchainManager::createCommandBuffers()
 
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = mVulkanState.commandPool;
+	allocInfo.commandPool = mState.commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = (uint32_t) cmdBuffers.size();
 	
-	VK_CHECK_RESULT(vkAllocateCommandBuffers(mVulkanState.device, &allocInfo, cmdBuffers.data()));
+	VK_CHECK_RESULT(vkAllocateCommandBuffers(mState.device, &allocInfo, cmdBuffers.data()));
 
 	LOG("COMMAND POOL ALLOCATED");
 
 //	buildCommandBuffers();
 }
 
-void SwapchainManager::createSemaphores()
+uint32_t SwapchainManager::getWidth() const
 {
-	VkSemaphoreCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	VK_CHECK_RESULT(vkCreateSemaphore(mVulkanState.device, &createInfo, nullptr, &mImageAvailableSemaphore));
-	VK_CHECK_RESULT(vkCreateSemaphore(mVulkanState.device, &createInfo, nullptr, &mRenderFinishedSemaphore));
-	LOG("SEMAPHORES CREATED");
+	return mWindow.getWidth();
+}
+
+uint32_t SwapchainManager::getHeight() const
+{
+	return mWindow.getHeight();
 }

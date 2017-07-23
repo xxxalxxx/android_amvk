@@ -11,7 +11,7 @@ const aiTextureType* Skinned::TEXTURE_TYPES = Skinned_TEXTURE_TYPES;
 
 const uint32_t Skinned::NUM_TEXTURE_TYPES = ARRAY_SIZE(Skinned_TEXTURE_TYPES);
 
-Skinned::Skinned(VulkanState& vulkanState):
+Skinned::Skinned(State& vulkanState):
 	animSpeedScale(1.f),
 	numVertices(0),
 	numIndices(0),
@@ -78,8 +78,11 @@ void Skinned::processMeshVertices(std::vector<Vertex>& vertices, aiMesh& mesh, M
 
 		if (hasPositions) 
 			convertVector(mesh.mVertices[j], vertex.pos);
-		if (hasNormals) 
+		if (hasNormals) { 
 			convertVector(mesh.mNormals[j], vertex.normal);
+			if (mModelFlags & ModelFlag_flipNormals) 
+				vertex.normal *= -1;
+		}
 		if (hasTangentsAndBitangents) {
 			convertVector(mesh.mTangents[j], vertex.tangent);
 			convertVector(mesh.mBitangents[j], vertex.bitangent);
@@ -423,7 +426,7 @@ void Skinned::createDescriptorSet()
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = mDescriptorPool;
 	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &mState.descriptorSetLayouts.uniform;
+	allocInfo.pSetLayouts = &mState.descriptorSetLayouts.uniformVertex;
 
 	VK_CHECK_RESULT(vkAllocateDescriptorSets(mState.device, &allocInfo, &mUniformDescriptorSet));
 	

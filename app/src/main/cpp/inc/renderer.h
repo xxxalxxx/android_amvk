@@ -8,40 +8,44 @@
 #include <stdio.h>
 #include <unordered_set>
 #include <cstddef>
-
+#include <chrono>
 
 #include "macro.h"
 #include "window.h"
 #include "camera.h"
 #include "timer.h"
-#include "device_queue_indices.h"
 #include "file_manager.h"
 #include "vulkan_utils.h"
+#include "pipeline_builder.h"
 #include "pipeline_creator.h"
-#include "pipeline_manager.h"
-#include <chrono>
 #include "texture_manager.h"
 #include "device_manager.h"
 #include "swapchain_manager.h"
-#include "shader_manager.h"
-#include "descriptor_manager.h"
+#include "shader_creator.h"
+#include "descriptor_creator.h"
 #include "tquad.h"
 #include "model.h"
 #include "skinned.h"
+#include "fullscreen_quad.h"
+#include "point_light.h"
+#include "scene_lights.h"
+#include "g_buffer.h"
 
-
-class VulkanManager { 
+class Renderer {
 	friend class Engine;
 	struct SwapChainDesc;
 public:
 
-	VulkanManager(Window& window);
-	virtual ~VulkanManager();
+    Renderer(Window& window);
+	virtual ~Renderer();
 	void init();
 
 	void buildCommandBuffers(const Timer &timer, Camera &camera);
+	void buildGBuffers(const Timer &timer, Camera &camera);
+	void buildComputeBuffers(const Timer &timer, Camera &camera); 
 	void updateUniformBuffers(const Timer& timer, Camera& camera);
 	void draw();
+    void onWindowSizeChanged(uint32_t width, uint32_t height);
 	
 	void waitIdle();
 	void recreateSwapChain();
@@ -50,16 +54,24 @@ public:
 
 private:
 	void updateUniformBuffer(const Timer& timer);
+	void createSemaphores();
 
 	Window& mWindow;
-	VulkanState mState;
+	State mState;
 	DeviceManager mDeviceManager;
 	SwapchainManager mSwapChainManager;
 	TQuad tquad;
 	Model suit;
 	Skinned guard;
 	Skinned dwarf;
+	FullscreenQuad fullscreenQuad;
+	SceneLights sceneLights;
+	GBuffer gBuffer;
 	uint32_t imageIndex;
+
+	VkSemaphore imageAquiredSemaphore;
+	VkSemaphore offscreenSemaphore;
+	VkSemaphore renderFinishedSemaphore;
 };
 
 #endif

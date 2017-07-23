@@ -1,15 +1,11 @@
 #ifndef AMVK_BUFFER_INFO_H
 #define AMVK_BUFFER_INFO_H
 
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
-#endif
+#include "vulkan.h"
 
 #include "cmd_pass.h"
 #include "vulkan_utils.h"
-#include "vulkan_state.h"
+#include "state.h"
 
 #include <cstring>
 

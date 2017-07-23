@@ -1,12 +1,7 @@
 #ifndef AMVK_TQUAD_H
 #define AMVK_TQUAD_H
 #include "macro.h"
-
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
-#endif
+#include "vulkan.h"
 
 #include <cstring>
 #include <cstddef>
@@ -16,12 +11,14 @@
 
 #include "buffer_helper.h"
 #include "image_helper.h"
-#include "vulkan_image_info.h"
+#include "image_info.h"
 #include "texture_manager.h"
-#include "pipeline_creator.h"
+#include "pipeline_builder.h"
 #include "pipeline_cache.h"
 #include "timer.h"
 #include "camera.h"
+
+#include <glm/gtx/string_cast.hpp>
 
 class TQuad {
 public:
@@ -43,9 +40,9 @@ public:
 		//glm::mat4 proj;
 	};
 
-	static void createPipeline(VulkanState& state);
+	static void createPipeline(State& state);
 
-	TQuad(VulkanState& vulkanState);
+	TQuad(State& vulkanState);
 	~TQuad();
 	void draw(VkCommandBuffer& commandBuffer); 
 	void init();
@@ -57,7 +54,7 @@ public:
 				 mIndexBufferOffset, 
 				 mUniformBufferOffset;
 
-	VulkanState& mState;
+	State& mState;
 	BufferInfo mCommonBufferInfo;
 	BufferInfo mVertexBufferDesc, mIndexBufferDesc, mUniformBufferDesc, mUniformStagingBufferDesc;
 	ImageInfo *mTextureDesc;

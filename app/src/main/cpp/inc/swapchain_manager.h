@@ -1,28 +1,24 @@
 #ifndef AMVK_SWAPCHAIN_MANAGER_H
 #define AMVK_SWAPCHAIN_MANAGER_H
 
+#include "vulkan.h"
 
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
+#ifndef __ANDROID__
 #include <GLFW/glfw3.h>
 #endif
-
 
 #include <vector>
 #include <array>
 
-#include "vulkan_state.h"
+#include "state.h"
 #include "vulkan_utils.h"
 #include "image_helper.h"
 #include "window.h"
-#include "swap_chain_desc.h"
 #include "tquad.h"
 
 class SwapchainManager {
 public:
-	SwapchainManager(VulkanState& vulkanState, Window& window);
+	SwapchainManager(State& vulkanState, Window& window);
 	~SwapchainManager();
 	void createSurface();
 	void createSwapChain();
@@ -33,19 +29,17 @@ public:
 	void createCommandBuffers();
 	void createSemaphores();
 	void createRenderPass();
+	uint32_t getWidth() const;
+	uint32_t getHeight() const;
 
 	VkSurfaceFormatKHR getSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const; 
 	VkPresentModeKHR getPresentMode(const std::vector<VkPresentModeKHR>& presentModes) const;
 	VkExtent2D getExtent(VkSurfaceCapabilitiesKHR& surfaceCapabilities) const;
-	SwapChainDesc getSwapChainDesc(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface);
-	SwapChainDesc swapChainDesc;
 
 	std::vector<VkFramebuffer> framebuffers;
 	std::vector<VkCommandBuffer> cmdBuffers;
-
-	VkSemaphore mImageAvailableSemaphore, mRenderFinishedSemaphore;
 private:
-	VulkanState& mVulkanState;
+	State& mState;
 	Window& mWindow;
 
 	std::vector<VkImage> mSwapChainImages;

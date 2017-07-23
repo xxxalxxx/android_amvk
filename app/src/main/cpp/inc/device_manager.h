@@ -8,37 +8,41 @@
 #include <GLFW/glfw3.h>
 #endif
 
-
 #include <vector>
 #include <cstring>
 #include <unordered_set>
+#include <stdint.h>
 
-#include "vulkan_state.h"
+#include "state.h"
 #include "vulkan_utils.h"
-#include "device_queue_indices.h"
 #include "macro.h"
 #include "swapchain_manager.h"
 
 class DeviceManager {
 public:
-	DeviceManager(VulkanState& vulkanState);
+	struct QueueIndices {
+		uint32_t graphics = UINT32_MAX;
+		uint32_t transfer = UINT32_MAX;
+		uint32_t compute = UINT32_MAX;
+		uint32_t present = UINT32_MAX;
+	};
+
+	DeviceManager(State& vulkanState);
 	void createVkInstance();
 	void enableDebug();
 	void createPhysicalDevice(SwapchainManager& vulkanSwapchainManager);
 	void createLogicalDevice();
 
-
-	DeviceQueueIndicies getDeviceQueueFamilyIndices(const VkPhysicalDevice& physicalDevice) const;
 	bool deviceExtensionsSupported(const VkPhysicalDevice& physicalDevice) const;
+	bool deviceQueueIndicesSupported(const VkPhysicalDevice& physicalDevice, QueueIndices& outIndices) const;
 	std::vector<const char*> getExtensionNames();
 	
 	static const std::vector<const char*> sDeviceExtensions;
 	static const std::vector<const char*> sValidationLayers;
 
 private:
-	DeviceQueueIndicies mDeviceQueueIndices;
 	VkDebugReportCallbackEXT mDebugReportCallback; 
-	VulkanState& mVulkanState;
+	State& mState;
 };
 
 #endif

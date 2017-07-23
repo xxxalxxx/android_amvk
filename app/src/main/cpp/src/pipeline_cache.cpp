@@ -7,7 +7,7 @@ void PipelineCacheInfo::getCache(const VkDevice& device)
     if (hasCache)
         return;
     FileManager::getInstance().readCache(data, cacheName);
-    PipelineCreator::pipelineCache(device, data, createInfo);
+    PipelineBuilder::pipelineCache(device, data, createInfo);
 
     VK_CHECK_RESULT(vkCreatePipelineCache(device, &createInfo, nullptr, &pipelineCache));
 }

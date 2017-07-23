@@ -4,11 +4,7 @@
 #include "macro.h"
 
 
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
-#endif
+#include "vulkan.h"
 
 #include <cstring>
 #include <cstddef>
@@ -26,10 +22,10 @@
 #include "pipeline_cache.h"
 #include "buffer_helper.h"
 #include "image_helper.h"
-#include "vulkan_image_info.h"
-#include "vulkan_state.h"
+#include "image_info.h"
+#include "state.h"
 #include "texture_manager.h"
-#include "pipeline_creator.h"
+#include "pipeline_builder.h"
 #include "timer.h"
 #include "camera.h"
 
@@ -92,7 +88,7 @@ public:
 	static void convertVector(const aiVector3D& src, glm::vec3& dest);
 	static void convertVector(const aiVector3D& src, glm::vec2& dest);
 
-	Model(VulkanState& vulkanState);
+	Model(State& vulkanState);
 	virtual ~Model();
 
 	void init(const char* modelPath, 
@@ -127,7 +123,7 @@ protected:
 	VkDescriptorPool mDescriptorPool;
 	VkDescriptorSet mUniformDescriptorSet;
 
-	VulkanState& mState;
+	State& mState;
 	BufferInfo mCommonBufferInfo;
 	std::string mPath, mFolder;
 	std::unordered_map<uint32_t, Material> mMaterialIndexToMaterial;

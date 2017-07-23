@@ -32,8 +32,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCb(
 	return VK_FALSE;
 }
 
-DeviceManager::DeviceManager(VulkanState& vulkanState): 
-	mVulkanState(vulkanState)
+DeviceManager::DeviceManager(State& vulkanState):
+	mState(vulkanState)
 {
 
 }
@@ -92,7 +92,7 @@ void DeviceManager::createVkInstance()
 	instanceInfo.enabledLayerCount = 0;
 #endif
     LOG("BEFORE LAYERS");
-	VK_CHECK_RESULT(vkCreateInstance(&instanceInfo, nullptr, &mVulkanState.instance));
+	VK_CHECK_RESULT(vkCreateInstance(&instanceInfo, nullptr, &mState.instance));
 	LOG("INSTANCE CREATED");
 }
 
@@ -107,59 +107,76 @@ void DeviceManager::enableDebug()
 	createInfo.pfnCallback = &debugCb;
 	createInfo.pUserData = nullptr;
 
-	VK_CALL_IPROC(mVulkanState.instance, vkCreateDebugReportCallbackEXT, mVulkanState.instance, &createInfo, nullptr, &mDebugReportCallback);
+	VK_CALL_IPROC(mState.instance, vkCreateDebugReportCallbackEXT, mState.instance, &createInfo, nullptr, &mDebugReportCallback);
 	LOG("DEBUG ENABLED");
 }
 
 void DeviceManager::createPhysicalDevice(SwapchainManager& swapchainManager) 
 {
 	uint32_t numDevices = 0;
-	vkEnumeratePhysicalDevices(mVulkanState.instance, &numDevices, nullptr);
+	vkEnumeratePhysicalDevices(mState.instance, &numDevices, nullptr);
 
 	if (!numDevices)
 		throw std::runtime_error("No Physical devices found");
 
 	std::vector<VkPhysicalDevice> devices(numDevices);
-	vkEnumeratePhysicalDevices(mVulkanState.instance, &numDevices, devices.data());
+	vkEnumeratePhysicalDevices(mState.instance, &numDevices, devices.data());
 
 	for (const auto& device : devices) {
-		DeviceQueueIndicies dqi = getDeviceQueueFamilyIndices(device);
+
 		bool extenstionsSupported = deviceExtensionsSupported(device);
-		
 		if (!extenstionsSupported)
 			continue;
-
-		SwapChainDesc swapChainDesc = swapchainManager.getSwapChainDesc(device, mVulkanState.surface);
-		if (!swapChainDesc.supported()) 
+		uint32_t numSurfaceFormats;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, mState.surface, &numSurfaceFormats, nullptr);
+		if (numSurfaceFormats == 0)
+			continue;
+		uint32_t numPresentModes;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, mState.surface, &numPresentModes, nullptr);
+		if (numPresentModes == 0)
+			continue;
+		QueueIndices queueIndices = {};
+		if (!deviceQueueIndicesSupported(device, queueIndices))
 			continue;
 
-		if (dqi.graphicsIndexSet() && dqi.supportedIndexSet()) {
-			mVulkanState.physicalDevice = device;
-			mVulkanState.graphicsQueueIndex = dqi.getGraphicsQueueIndex();
-			mVulkanState.presentQueueIndex = dqi.getSupportedQueueIndex();
-			mVulkanState.swapChainDesc = swapChainDesc;
-			mDeviceQueueIndices = dqi;
-			LOG("DEVICE INITIALIZED");
-			break;
-		}
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, mState.surface, &mState.deviceInfo.surfaceCapabilities);
+
+		mState.deviceInfo.surfaceFormats.resize(numSurfaceFormats);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, mState.surface, &numSurfaceFormats, mState.deviceInfo.surfaceFormats.data());
+
+		mState.deviceInfo.presentModes.resize(numPresentModes);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, mState.surface, &numPresentModes, mState.deviceInfo.presentModes.data());
+
+		mState.physicalDevice = device;
+		mState.graphicsQueueIndex = queueIndices.graphics;
+		mState.presentQueueIndex = queueIndices.present;
+		mState.computeQueueIndex = queueIndices.compute;
+		mState.transferQueueIndex = queueIndices.transfer;
+		LOG("DEVICE INITIALIZED");
+		break;
+
 	}
 
-	if (mVulkanState.physicalDevice == VK_NULL_HANDLE)
+	if (mState.physicalDevice == VK_NULL_HANDLE) {
+        LOG("DEVICE NOT FOUND");
 		throw std::runtime_error("No valid physical device found");
+    }
 }
-
-
 
 void DeviceManager::createLogicalDevice() 
 {
 	float queuePriority = 1.0f;
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::unordered_set<int> uniqueIndices;
-	
-	for (size_t i = 0; i < 2; ++i) 
-		uniqueIndices.insert(mDeviceQueueIndices[i]);
 
-	for (int index : uniqueIndices) {
+	std::unordered_set<uint32_t> uniqueIndices;
+	uniqueIndices.insert(mState.graphicsQueueIndex);
+	uniqueIndices.insert(mState.presentQueueIndex);
+    if (mState.transferQueueIndex != UINT32_MAX)
+	    uniqueIndices.insert(mState.transferQueueIndex);
+	uniqueIndices.insert(mState.computeQueueIndex);
+
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+	for (auto index : uniqueIndices) {
 		LOG("DEVICE INDEX: %d", index);
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -185,24 +202,27 @@ void DeviceManager::createLogicalDevice()
 #else
 	createInfo.enabledLayerCount = 0;
 #endif	
-	VK_CHECK_RESULT(vkCreateDevice(mVulkanState.physicalDevice, &createInfo, nullptr, &mVulkanState.device));
-	vkGetDeviceQueue(mVulkanState.device, mDeviceQueueIndices.getGraphicsQueueIndex(), 0, &mVulkanState.graphicsQueue);
-	vkGetDeviceQueue(mVulkanState.device, mDeviceQueueIndices.getSupportedQueueIndex(), 0, &mVulkanState.presentQueue);
+	VK_CHECK_RESULT(vkCreateDevice(mState.physicalDevice, &createInfo, nullptr, &mState.device));
+	vkGetDeviceQueue(mState.device, mState.graphicsQueueIndex, 0, &mState.graphicsQueue);
+	vkGetDeviceQueue(mState.device, mState.presentQueueIndex, 0, &mState.presentQueue);
+    if (mState.transferQueueIndex != UINT32_MAX)
+	    vkGetDeviceQueue(mState.device, mState.transferQueueIndex, 0, &mState.transferQueue);
+	vkGetDeviceQueue(mState.device, mState.computeQueueIndex, 0, &mState.computeQueue);
 	LOG("LOGICAL DEVICE CREATED");
-
 
 	//init device info
 	VkPhysicalDeviceFeatures physicalDeviceFeatures;
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 
-	vkGetPhysicalDeviceFeatures(mVulkanState.physicalDevice, &physicalDeviceFeatures);
-	vkGetPhysicalDeviceProperties(mVulkanState.physicalDevice, &physicalDeviceProperties); 
+	vkGetPhysicalDeviceFeatures(mState.physicalDevice, &physicalDeviceFeatures);
+	vkGetPhysicalDeviceProperties(mState.physicalDevice, &physicalDeviceProperties);
 	
-	mVulkanState.deviceInfo.samplerAnisotropy = physicalDeviceFeatures.samplerAnisotropy;
-	mVulkanState.deviceInfo.maxPushConstantsSize = physicalDeviceProperties.limits.maxPushConstantsSize;
-	mVulkanState.deviceInfo.minUniformBufferOffsetAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
+	mState.deviceInfo.samplerAnisotropy = physicalDeviceFeatures.samplerAnisotropy;
+	mState.deviceInfo.maxPushConstantsSize = physicalDeviceProperties.limits.maxPushConstantsSize;
+	mState.deviceInfo.minUniformBufferOffsetAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
+	mState.deviceInfo.maxDescriptorSetUniformBuffersDynamic = physicalDeviceProperties.limits.maxDescriptorSetUniformBuffersDynamic;
 	LOG("ANISOTROPY %u", physicalDeviceFeatures.samplerAnisotropy);
-	LOG("MAX PUSH CONST SIZE max: %u", mVulkanState.deviceInfo.maxPushConstantsSize);
+	LOG("MAX PUSH CONST SIZE max: %u", mState.deviceInfo.maxPushConstantsSize);
 
 	LOG("LOGICAL DEVICE CREATED");
 }
@@ -259,37 +279,43 @@ std::vector<const char*> DeviceManager::getExtensionNames()
     return extensions;
 }
 
-DeviceQueueIndicies DeviceManager::getDeviceQueueFamilyIndices(const VkPhysicalDevice& physicalDevice) const
-{
-	DeviceQueueIndicies deviceQueueIndicies;
-	uint32_t numPhysicalDeviceQueueFamilies = 0;
+bool DeviceManager::deviceQueueIndicesSupported(const VkPhysicalDevice& physicalDevice, QueueIndices& outIndices) const {
+	uint32_t numPhysicalDeviceQueueFamilies;
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &numPhysicalDeviceQueueFamilies, nullptr);
 	std::vector<VkQueueFamilyProperties> properties(numPhysicalDeviceQueueFamilies);
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &numPhysicalDeviceQueueFamilies, properties.data());
 
-	for (size_t i = 0; i < numPhysicalDeviceQueueFamilies; ++i) {
+	for (uint32_t i = 0; i < numPhysicalDeviceQueueFamilies; ++i) {
 		VkQueueFamilyProperties& prop = properties[i];
-		if (prop.queueCount > 0) {
-			if (prop.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
-				deviceQueueIndicies.setGraphicsIndex(i);
-			
-			//if (prop.queueFlags & VK_QUEUE_COMPUTE_BIT) 
-			//	deviceQueueIndicies.setComputeIndex(i);
-			
-			//if (prop.queueFlags & VK_QUEUE_TRANSFER_BIT) 
-			//	deviceQueueIndicies.setTransferIndex(i);
+		if (prop.queueCount == 0)
+			continue;
 
-			VkBool32 surfaceSupported = false;
-			VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, mVulkanState.surface, &surfaceSupported));
+		if (prop.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			outIndices.graphics = i;
+		if (prop.queueFlags & VK_QUEUE_TRANSFER_BIT)
+			outIndices.transfer = i;
+		if (prop.queueFlags & VK_QUEUE_COMPUTE_BIT)
+			outIndices.compute = i;
 
-			if (surfaceSupported) 
-				deviceQueueIndicies.setSupportedIndex(i);
+		VkBool32 surfaceSupported;
+		VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, mState.surface, &surfaceSupported));
 
-			if (deviceQueueIndicies.graphicsIndexSet() && deviceQueueIndicies.supportedIndexSet())
-				break;
-		}
+		if (surfaceSupported)
+			outIndices.present = i;
+        // transfer queue is optional
+		if (outIndices.graphics != UINT32_MAX
+			&& outIndices.compute != UINT32_MAX
+			&& outIndices.present != UINT32_MAX)
+			return true;
+        LOG("QUEUE INDICES:\n device: %p\n index: %u\n graphics: %s\n transfer: %s\n compute: %s\n present: %s",
+            &physicalDevice,
+            i,
+            outIndices.graphics != UINT32_MAX ? "true" : "false",
+            outIndices.transfer != UINT32_MAX ? "true" : "false",
+            outIndices.compute != UINT32_MAX ? "true" : "false",
+            outIndices.present != UINT32_MAX ? "true" : "false");
 	}
-	return deviceQueueIndicies;
+	return false;
 }
 
 bool DeviceManager::deviceExtensionsSupported(const VkPhysicalDevice& physicalDevice) const 

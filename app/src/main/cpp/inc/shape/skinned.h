@@ -4,11 +4,7 @@
 #include "macro.h"
 
 
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
-#endif
+#include "vulkan.h"
 
 #include <cstring>
 #include <cstddef>
@@ -34,10 +30,10 @@
 #include "pipeline_cache.h"
 #include "buffer_helper.h"
 #include "image_helper.h"
-#include "vulkan_image_info.h"
-#include "vulkan_state.h"
+#include "image_info.h"
+#include "state.h"
 #include "texture_manager.h"
-#include "pipeline_creator.h"
+#include "pipeline_builder.h"
 #include "timer.h"
 #include "camera.h"
 #include "anim_node.h"
@@ -46,9 +42,10 @@
 
 class Skinned {
 public:
-	typedef int ModelFlags;
-	static constexpr int ModelFlag_stripFullPath = 1;
-	
+	typedef uint32_t ModelFlags;
+	static constexpr ModelFlags ModelFlag_stripFullPath = 1;
+	static constexpr ModelFlags ModelFlag_flipNormals = 1 << 1;
+
 	static const aiTextureType* TEXTURE_TYPES;
 	static const uint32_t NUM_TEXTURE_TYPES;
 
@@ -111,7 +108,7 @@ public:
 		uint32_t materialIndex;
 	};
 
-	Skinned(VulkanState& vulkanState);
+	Skinned(State& vulkanState);
 	virtual ~Skinned();
 
 	void init(const char* modelPath, unsigned int pFlags = DEFAULT_FLAGS, ModelFlags modelFlags = 0);
@@ -159,7 +156,7 @@ protected:
 	VkDescriptorSet mUniformDescriptorSet;
 	VkDescriptorSet mSamplersDescriptorSet;
 
-	VulkanState& mState;
+	State& mState;
 	BufferInfo mCommonBufferInfo;
 //	BufferInfo mCommonStagingBufferInfo;
 

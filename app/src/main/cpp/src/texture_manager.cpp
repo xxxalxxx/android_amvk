@@ -7,7 +7,7 @@ TextureManager& TextureManager::getInstance()
 }
 
 ImageInfo* TextureManager::load(
-			VulkanState& state, 
+			State& state,
 			const VkCommandPool& cmdPool, 
 			const VkQueue& cmdQueue,
 			const TextureDesc& textureDesc)

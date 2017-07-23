@@ -2,11 +2,7 @@
 #define VULKAN_IMAGE_INFO
 
 
-#ifdef __ANDROID__
-#include "vulkan_wrapper.h"
-#else
-#include <vulkan/vulkan.h>
-#endif
+#include "vulkan.h"
 
 #include "macro.h"
 
@@ -15,7 +11,7 @@ public:
 	ImageInfo();
 	ImageInfo(VkDevice& vkDevice);
 	ImageInfo(VkDevice& vkDevice, uint32_t width, uint32_t height);
-	~ImageInfo();
+	virtual ~ImageInfo();
 	
 	ImageInfo& operator=(ImageInfo other);
 

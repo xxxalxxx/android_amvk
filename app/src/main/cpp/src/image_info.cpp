@@ -1,4 +1,4 @@
-#include "vulkan_image_info.h"
+#include "image_info.h"
 
 ImageInfo::ImageInfo(): 
 	width(0),

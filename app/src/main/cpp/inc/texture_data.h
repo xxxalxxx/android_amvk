@@ -1,7 +1,7 @@
 #ifndef AMVK_TEXTURE_DATA_H
 #define AMVK_TEXTURE_DATA_H
 
-#include "vulkan_state.h"
+#include "state.h"
 #include "file_manager.h"
 #include <stb/stb_image.h>
 #include <string>

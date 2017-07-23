@@ -11,7 +11,7 @@ const aiTextureType* Model::TEXTURE_TYPES = Model_TEXTURE_TYPES;
 
 const uint32_t Model::NUM_TEXTURE_TYPES = ARRAY_SIZE(Model_TEXTURE_TYPES);
 
-Model::Model(VulkanState& vulkanState):
+Model::Model(State& vulkanState):
 	numVertices(0),
 	numIndices(0),
 	uniformBufferOffset(0),
@@ -224,7 +224,7 @@ void Model::createDescriptorSet()
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = mDescriptorPool;
 	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &mState.descriptorSetLayouts.uniform;
+	allocInfo.pSetLayouts = &mState.descriptorSetLayouts.uniformVertex;
 
 	VK_CHECK_RESULT(vkAllocateDescriptorSets(mState.device, &allocInfo, &mUniformDescriptorSet));
 	

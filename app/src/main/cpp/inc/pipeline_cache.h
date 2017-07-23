@@ -4,8 +4,8 @@
 #include <cstddef>
 #include <vector>
 #include "macro.h"
-#include "vulkan_state.h"
-#include "pipeline_creator.h"
+#include "state.h"
+#include "pipeline_builder.h"
 
 struct PipelineCacheInfo {
     PipelineCacheInfo(const char* cacheName, VkPipelineCache& pipelineCache);
