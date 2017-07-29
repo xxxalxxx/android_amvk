@@ -19,6 +19,6 @@ layout (location = 2) out vec4 outAlbedo;
 void main() {
     //outColor = texture(texSampler[inSamplerIndices.x], inTexCoord);
 	outPosition = vec4(inWorldPos, 1.0);
-	outNormal = vec4(inNormal, 1.0);
+	outNormal = vec4(inNormal, gl_FragCoord.z);
 	outAlbedo = texture(texSampler[inSamplerIndices.x], inTexCoord);
 }

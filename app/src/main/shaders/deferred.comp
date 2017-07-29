@@ -1,0 +1,85 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_ARB_shading_language_420pack : enable
+#extension GL_ARB_shader_image_load_store : enable
+
+#define WORK_GROUP_SIZE 32
+#define MAX_LIGHTS 1024
+#define MAX_LIGHTS_PER_TILE 40
+
+#define W 1080
+#define H 1920
+
+// for 255 range multiply by more, since numbers like 0.999 will already be converted to 254 
+// avoid negative byte since 7 = 0111 in binary
+#define TO_FLOAT(x) (float(x) / 0x7fffffff)
+#define TO_UINT(x) uint(x * 0x7fffffff)
+
+struct PointLight {
+    vec3 position;
+    float radius;
+    vec3 color;
+    float intensity;
+};
+
+layout (binding = 0, rgba8) uniform image2D outImage;
+layout (binding = 1, rgba16f) uniform image2D imageNormalDepth;
+layout (binding = 2, rgba8) uniform image2D imageAlbedo;
+
+layout(binding = 3) uniform UniformBufferObject {
+    mat4 view;
+    mat4 proj;
+	vec3 eyePos;
+	vec2 textureDimens;
+	int lightCount;
+} ubo;
+
+layout (std430, binding = 4) buffer LightsBufferObject {
+    PointLight pointLights[];
+};
+
+
+layout (local_size_x = WORK_GROUP_SIZE, local_size_y = WORK_GROUP_SIZE) in;
+
+shared uint minDepthInt;
+shared uint maxDepthInt;
+shared uint visiblePointLights[MAX_LIGHTS];
+shared uint visiblePointLightCount;
+
+void main() {
+
+	if (gl_LocalInvocationIndex == 0) {
+		minDepthInt = 0xFFFFFFFF;
+		maxDepthInt = 0;
+		visiblePointLightCount = 0;
+	}
+
+	memoryBarrierShared();
+	barrier();
+	
+	ivec2 pixelPos = ivec2(gl_GlobalInvocationID.xy);
+    vec2 pixelPosF = vec2(pixelPos) / vec2(W, H);
+
+	vec4 normalDepth = vec4(0.0, 0.0, 0.0, 0.0);//imageLoad(imageNormalDepth, pixelPos);
+	vec3 normal = vec3(normalDepth);
+	float depth = normalDepth.w;
+    uint depthInt = TO_UINT(depth);
+
+	float d = TO_FLOAT(depthInt);
+	atomicMin(minDepthInt, depthInt);
+	atomicMax(maxDepthInt, depthInt);
+
+	memoryBarrierShared();
+	barrier();
+
+	float minDepth = TO_FLOAT(minDepthInt);
+	float maxDepth = TO_FLOAT(maxDepthInt);
+
+    vec2 tilePos = vec2(gl_WorkGroupID.xy * gl_WorkGroupSize.xy) / ubo.textureDimens;
+
+	vec4 albedoColor = imageLoad(imageAlbedo, pixelPos);
+	vec4 red = vec4(1.0, 0.0, 0.0, 1.0);
+	vec4 color = vec4(pixelPosF.y * pixelPosF.x);
+	imageStore(outImage, pixelPos, albedoColor);
+}
+

@@ -43,6 +43,9 @@ void Skinned::init(std::string modelPath, unsigned int pFlags, ModelFlags modelF
 
 void Skinned::init(const char* modelPath, unsigned int pFlags, ModelFlags modelFlags)
 {
+
+	LOG_TITLE((std::string("Skinned Model: ") + std::string(modelPath)).c_str());
+
 	mPath = modelPath;
 	mFolder = FileManager::getFilePath(std::string(modelPath));
 	mModelFlags = modelFlags;

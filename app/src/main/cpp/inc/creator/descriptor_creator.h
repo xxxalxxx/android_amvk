@@ -105,7 +105,8 @@ inline void createDeferredDescriptorSetLayout(State& state)
 		{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 		{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
 		{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
-		{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr }
+		{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+		{ 4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr }
 	};
 
 	VkDescriptorSetLayoutCreateInfo descSetLayoutInfo = {};
@@ -284,8 +285,39 @@ inline void createDescriptorPool(State& state)
 	VK_CHECK_RESULT(vkCreateDescriptorPool(state.device, &poolInfo, nullptr, &state.descriptorPool));
 }
 
+inline void createTilingDescriptorSetLayout(State& state)
+{
+
+	// uint32_t binding 
+	// VkDescriptorType descriptorType 
+	// uint32_t descriptorCount 
+	// VkShaderStageFlags stageFlags
+   	// const VkSampler* pImmutableSamplers
+
+
+	VkDescriptorSetLayoutBinding bindings[] = {
+		{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr },
+		{ 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr },
+		{ 2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr },
+		{ 3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr },
+		{ 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr },
+	};
+
+	VkDescriptorSetLayoutCreateInfo descSetLayoutInfo = {};
+	descSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descSetLayoutInfo.bindingCount = ARRAY_SIZE(bindings); 
+	descSetLayoutInfo.pBindings = bindings;
+
+	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(state.device, &descSetLayoutInfo, nullptr, &state.descriptorSetLayouts.tiling));
+}
+
+
+
 inline void createDescriptorSetLayouts(State& state)
 {
+
+	LOG_TITLE("Descriptor Creator");
+
 	createTQuadDescriptorSetLayout(state);
 	createPointLightDescriptorSetLayout(state);
 	createModelDescriptorSetLayout(state);
@@ -296,6 +328,7 @@ inline void createDescriptorSetLayouts(State& state)
 	createDynamicUniformVertexDescriptorSetLayout(state);
 	createDynamicUniformFragmentDescriptorSetLayout(state);
 	createDeferredDescriptorSetLayout(state);
+	createTilingDescriptorSetLayout(state);
 	LOG("DESC LAYOUTS CREATED");
 }
 

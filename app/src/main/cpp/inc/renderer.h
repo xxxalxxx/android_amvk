@@ -49,13 +49,11 @@ public:
 	
 	void waitIdle();
 	void recreateSwapChain();
-
-	//const VkDevice& getVkDevice() const;
-
 private:
 	void updateUniformBuffer(const Timer& timer);
 	void createSemaphores();
-
+	void createFences();
+	
 	Window& mWindow;
 	State mState;
 	DeviceManager mDeviceManager;
@@ -67,11 +65,15 @@ private:
 	FullscreenQuad fullscreenQuad;
 	SceneLights sceneLights;
 	GBuffer gBuffer;
+
 	uint32_t imageIndex;
 
 	VkSemaphore imageAquiredSemaphore;
 	VkSemaphore offscreenSemaphore;
 	VkSemaphore renderFinishedSemaphore;
+	VkSemaphore tilingFinishedSemaphore;
+
+	VkFence tilingFence;
 };
 
 #endif

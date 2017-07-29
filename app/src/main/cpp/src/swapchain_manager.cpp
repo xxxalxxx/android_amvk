@@ -50,19 +50,19 @@ void SwapchainManager::createSwapChain()
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	
 	if (mState.graphicsQueueIndex != mState.presentQueueIndex) {
 		uint32_t queueFamilyIndices[] = { 
-			(uint32_t) mState.graphicsQueueIndex,
-			(uint32_t) mState.presentQueueIndex
+			mState.graphicsQueueIndex,
+			mState.presentQueueIndex
 		};
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		LOG("OTHER");
+		LOG("Swapchain sharing mode concurrent");
 	} else {
-		LOG("SAME");
+		LOG("Swapchain sharing mode exclusive");
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
 
@@ -110,11 +110,7 @@ void SwapchainManager::createImageViews()
 
 void SwapchainManager::createDepthResources() 
 {
-	VkFormat depthFormat = ImageHelper::findSupportedFormat(
-			mState.physicalDevice,
-			{VK_FORMAT_D24_UNORM_S8_UINT},
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	VkFormat depthFormat = ImageHelper::findDepthStencilFormat(mState.physicalDevice);
 
 	mDepthImageDesc.width = mState.swapChainExtent.width;
 	mDepthImageDesc.height = mState.swapChainExtent.height;
@@ -125,7 +121,7 @@ void SwapchainManager::createDepthResources()
 			depthFormat, 
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_LAYOUT_PREINITIALIZED,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ImageHelper::createImageView(
@@ -175,14 +171,20 @@ void SwapchainManager::createFramebuffers(VkRenderPass renderPass)
 VkSurfaceFormatKHR SwapchainManager::getSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& surfaceFormats) const 
 {
 	if (surfaceFormats.size() == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
-		return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+        LOG("FORMAT INITIAL");
+        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+    }
+
+    for (const auto &surfaceFormat : surfaceFormats) {
+		LOG("FORMAT LOOP format: %u, colorSpace: %u", surfaceFormat.format, surfaceFormat.colorSpace);
+        if ((surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM || surfaceFormat.format == VK_FORMAT_R8G8B8A8_UNORM) 
+			&& surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            LOG("FORMAT LOOP");
+            return surfaceFormat;
+        }
 	}
-
-	for (const auto& surfaceFormat : surfaceFormats)
-		if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-			return surfaceFormat;
-
-	return surfaceFormats[0];
+    LOG("FORMAT FIRST");
+    return surfaceFormats[0];
 }
 
 VkPresentModeKHR SwapchainManager::getPresentMode(const std::vector<VkPresentModeKHR>& presentModes) const
@@ -215,7 +217,9 @@ void SwapchainManager::createRenderPass()
 	VkAttachmentDescription att = {};
 	att.format = mState.swapChainImageFormat;
 	att.samples = VK_SAMPLE_COUNT_1_BIT;
-	att.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	att.loadOp = 
+		VK_ATTACHMENT_LOAD_OP_LOAD;
+	// VK_ATTACHMENT_LOAD_OP_CLEAR;
 	att.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	att.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	att.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -225,8 +229,10 @@ void SwapchainManager::createRenderPass()
 	VkAttachmentDescription depthAtt = {};
 	depthAtt.format = ImageHelper::findDepthFormat(mState.physicalDevice);
 	depthAtt.samples = VK_SAMPLE_COUNT_1_BIT;
-	depthAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAtt.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAtt.loadOp = 
+		VK_ATTACHMENT_LOAD_OP_LOAD;
+	//VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	depthAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAtt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
 	//depthAtt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -246,6 +252,24 @@ void SwapchainManager::createRenderPass()
 	sub.colorAttachmentCount = 1;
 	sub.pColorAttachments = &attRef;
 	sub.pDepthStencilAttachment = &depthAttRef;
+
+	std::array<VkSubpassDependency, 2> dependencies;
+
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 	
 	VkSubpassDependency dependancy = {};
 	dependancy.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -268,8 +292,8 @@ void SwapchainManager::createRenderPass()
 	createInfo.pAttachments = attachments.data();
 	createInfo.subpassCount = 1;
 	createInfo.pSubpasses = &sub;
-	createInfo.dependencyCount = 1;
-	createInfo.pDependencies = &dependancy;
+	createInfo.dependencyCount = dependencies.size();
+	createInfo.pDependencies = dependencies.data();
 
 	VK_CHECK_RESULT(vkCreateRenderPass(mState.device, &createInfo, nullptr, &mState.renderPass));
 	LOG("RENDER PASS CREATED");

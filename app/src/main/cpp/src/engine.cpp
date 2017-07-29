@@ -26,6 +26,7 @@ void Engine::init(android_app* state)
     LOG("WINDOW ASPECT %f width: %u height: %u", mWindow.mAspect, mWindow.mWidth, mWindow.mHeight);
     mCamera.setAspect(mWindow.mAspect);
     mRenderer.init();
+	mRenderer.buildComputeBuffers(mTimer, mCamera);
     mRenderer.buildCommandBuffers(mTimer, mCamera);
     mRenderer.buildGBuffers(mTimer, mCamera);
 
@@ -112,7 +113,7 @@ void Engine::handleCmd(struct android_app *app, int32_t cmd)
 #else
 
 Engine::Engine():
-	mVulkanManager(mWindow)
+	mRenderer(mWindow)
 {
 
 }
@@ -128,7 +129,6 @@ void onWindowResized(GLFWwindow* window, int width, int height) {
 	Engine* eng = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 	Window& engWindow = eng->getWindow();
 	Camera& engCamera = eng->getCamera();
-    Renderer& renderer = eng->
 	engWindow.setDimens(width, height);
     engCamera.setAspect(engWindow.getAspect());
     engCamera.rebuildPerspective();

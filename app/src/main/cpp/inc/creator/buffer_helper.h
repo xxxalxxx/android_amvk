@@ -198,6 +198,18 @@ inline void createUniformBuffer(const State& state, BufferInfo& bufferInfo)
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 }
 
+inline void createStorageBuffer(const State& state, BufferInfo& bufferInfo)
+{
+	createBuffer(
+			state.physicalDevice,
+			state.device,
+			bufferInfo.buffer,
+			bufferInfo.size,
+			bufferInfo.memory,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+}
+
 inline void createDynamicUniformBuffer(const State& state, BufferInfo& bufferInfo)
 {
 	createBuffer(

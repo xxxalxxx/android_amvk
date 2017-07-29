@@ -43,6 +43,7 @@ struct ShaderInfo {
 	VkPipelineShaderStageCreateInfo vertex;
 	VkPipelineShaderStageCreateInfo fragment;
 	VkPipelineShaderStageCreateInfo geometry;
+	VkPipelineShaderStageCreateInfo compute;
 };
 
 struct Pipelines {
@@ -53,6 +54,7 @@ struct Pipelines {
 	PipelineInfo model;
 	PipelineInfo skinned;
 	PipelineInfo deferred;
+	PipelineInfo tiling;
 };
 
 struct DescriptorSets {
@@ -72,6 +74,7 @@ struct DescriptorSetLayouts {
 	VkDescriptorSetLayout sampler;
 	VkDescriptorSetLayout samplerList;
 	VkDescriptorSetLayout deferred;
+	VkDescriptorSetLayout tiling;
 };
 
 struct Shaders {
@@ -128,6 +131,8 @@ struct State {
 	uint32_t presentQueueIndex;
 	uint32_t transferQueueIndex;
 	uint32_t computeQueueIndex;
+
+	std::vector<uint32_t> uniqueIndices;
 
 	VkRenderPass renderPass;
 	

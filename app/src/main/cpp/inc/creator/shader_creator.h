@@ -12,6 +12,8 @@ namespace ShaderCreator
 	
 inline void createShaders(State& state)
 {
+	LOG_TITLE("Shader Creator");
+
 	Shaders& shaders = state.shaders;
 	
 	shaders.tquad.vertex = PipelineBuilder::shaderStage(state.device, "tquad.vert", VK_SHADER_STAGE_VERTEX_BIT);
@@ -31,6 +33,7 @@ inline void createShaders(State& state)
 
 	shaders.deferred.vertex = PipelineBuilder::shaderStage(state.device, "deferred.vert", VK_SHADER_STAGE_VERTEX_BIT);
 	shaders.deferred.fragment = PipelineBuilder::shaderStage(state.device, "deferred.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaders.deferred.compute =  PipelineBuilder::shaderStage(state.device, "deferred.comp", VK_SHADER_STAGE_COMPUTE_BIT);
 }
 
 

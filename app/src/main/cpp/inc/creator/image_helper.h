@@ -269,7 +269,7 @@ inline VkFormat findSupportedFormat(
 inline VkFormat findDepthStencilFormat(const VkPhysicalDevice& physicalDevice) 
 {
 	std::vector<VkFormat> depthStencilFormats = {
-		VK_FORMAT_D32_SFLOAT_S8_UINT,
+		//VK_FORMAT_D32_SFLOAT_S8_UINT,
 		//VK_FORMAT_D32_SFLOAT,
 		VK_FORMAT_D24_UNORM_S8_UINT,
 		VK_FORMAT_D16_UNORM_S8_UINT,

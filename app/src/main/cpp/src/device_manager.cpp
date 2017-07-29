@@ -174,6 +174,14 @@ void DeviceManager::createLogicalDevice()
 	    uniqueIndices.insert(mState.transferQueueIndex);
 	uniqueIndices.insert(mState.computeQueueIndex);
 
+    mState.uniqueIndices = std::vector<uint32_t>(uniqueIndices.begin(), uniqueIndices.end());
+
+    LOG("Queue indices: graphics: %u, present: %u, compute: %u, transfer: %u",
+        mState.graphicsQueueIndex,
+        mState.presentQueueIndex,
+        mState.computeQueueIndex,
+        mState.transferQueueIndex);
+
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
 	for (auto index : uniqueIndices) {
@@ -302,11 +310,7 @@ bool DeviceManager::deviceQueueIndicesSupported(const VkPhysicalDevice& physical
 
 		if (surfaceSupported)
 			outIndices.present = i;
-        // transfer queue is optional
-		if (outIndices.graphics != UINT32_MAX
-			&& outIndices.compute != UINT32_MAX
-			&& outIndices.present != UINT32_MAX)
-			return true;
+
         LOG("QUEUE INDICES:\n device: %p\n index: %u\n graphics: %s\n transfer: %s\n compute: %s\n present: %s",
             &physicalDevice,
             i,
@@ -314,6 +318,13 @@ bool DeviceManager::deviceQueueIndicesSupported(const VkPhysicalDevice& physical
             outIndices.transfer != UINT32_MAX ? "true" : "false",
             outIndices.compute != UINT32_MAX ? "true" : "false",
             outIndices.present != UINT32_MAX ? "true" : "false");
+
+        // transfer queue is optional
+		if (outIndices.graphics != UINT32_MAX
+			&& outIndices.compute != UINT32_MAX
+			&& outIndices.present != UINT32_MAX)
+			return true;
+
 	}
 	return false;
 }

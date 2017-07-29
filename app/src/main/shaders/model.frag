@@ -19,6 +19,7 @@ void main() {
     //outColor = texture(texSampler, inTexCoord);
 	 //outColor = vec4(texture(texSampler, inTexCoord).rgb, 0.3);
 	outPosition = vec4(inWorldPos, 1.0);
-	outNormal = vec4(inNormal, 1.0);
+	
+	outNormal = vec4(inNormal, gl_FragCoord.z);
 	outAlbedo = texture(texSampler, inTexCoord);
 }

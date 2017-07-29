@@ -38,14 +38,16 @@ public:
 
 	std::vector<VkFramebuffer> framebuffers;
 	std::vector<VkCommandBuffer> cmdBuffers;
+
+	std::vector<VkImage> mSwapChainImages;
+	ImageInfo mDepthImageDesc;
 private:
 	State& mState;
 	Window& mWindow;
 
-	std::vector<VkImage> mSwapChainImages;
+
 	std::vector<VkImageView> mSwapChainImageViews;
 
-	ImageInfo mDepthImageDesc;
 
 };
 

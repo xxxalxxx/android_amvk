@@ -133,7 +133,7 @@ int main() {
     Renderer& renderer = engine.getRenderer();
     Timer& timer = engine.getTimer();
     Camera& camera = engine.getCamera();
-
+	renderer.buildComputeBuffers(timer, camera);
 	renderer.buildGBuffers(timer, camera);
     renderer.buildCommandBuffers(timer, camera);
 
