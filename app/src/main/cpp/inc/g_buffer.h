@@ -109,6 +109,8 @@ private:
 	void createColorAttachmentDesc(VkAttachmentDescription& desc, VkFormat format);
 	void createDepthAttachmentDesc(VkAttachmentDescription& desc, VkFormat format);
 
+    VkImageTiling getTiling(VkFormat format, VkImageUsageFlags usage);
+
 	void initColorImageTransition(CmdPass& cmd, FramebufferAttachment& attachment);
 
 	State* mState;

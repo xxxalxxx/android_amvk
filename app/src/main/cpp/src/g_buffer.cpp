@@ -228,6 +228,51 @@ void  GBuffer::initColorImageTransition(CmdPass& cmd, FramebufferAttachment& att
             1, &barrier);
 }
 
+VkImageTiling GBuffer::getTiling(VkFormat format, VkImageUsageFlags usage) {
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(mState->physicalDevice, format, &formatProperties);
+
+    VkImageUsageFlagBits usages[] = {
+            VK_IMAGE_USAGE_STORAGE_BIT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+    };
+
+    VkFormatFeatureFlagBits features[] = {
+            VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+            VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
+    };
+
+    uint32_t totalUsages = ARRAY_SIZE(usages);
+    uint32_t numOptimals = 0;
+    uint32_t numLinears = 0;
+    uint32_t numUsages = 0;
+
+    for (uint32_t i = 0; i < totalUsages; ++i) {
+        if (usage & usages[i]) {
+            if (formatProperties.optimalTilingFeatures & features[i])
+                ++numOptimals;
+            if (formatProperties.linearTilingFeatures & features[i])
+                ++numLinears;
+            ++numUsages;
+        }
+    }
+
+    if (numUsages > 0) {
+        if (numLinears == numUsages) {
+            LOG("Linear tiling selected for format 0x%x with usages: 0x%x", format, usage);
+            return VK_IMAGE_TILING_LINEAR;
+        }
+        if (numOptimals == numUsages) {
+            LOG("Optimal tiling selected for format 0x%x with usages: 0x%x", format, usage);
+            return VK_IMAGE_TILING_OPTIMAL;
+        }
+    }
+    LOG("Usage unvalid 0x%x", usage);
+    throw std::runtime_error("Usage unvalid");
+}
+
 void GBuffer::createAttachment(
 		const VkPhysicalDevice& physicalDevice, 
 		const VkDevice& device,
@@ -235,38 +280,13 @@ void GBuffer::createAttachment(
 		VkFormat format,  
 		VkImageUsageFlags usage)
 {
-    VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(mState->physicalDevice, format, &formatProperties);
-    VkImageTiling tiling;
 	VkImageAspectFlags aspectMask = 0;
 
     if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-        aspectMask =
-                VK_IMAGE_ASPECT_DEPTH_BIT;
-        if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            tiling = VK_IMAGE_TILING_OPTIMAL;
-            LOG("Optimal tiling found for depth stencil attachment with format: %u", format);
-        } else if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            tiling = VK_IMAGE_TILING_LINEAR;
-            LOG("Linear tiling found for depth stencil attachment with format: %u", format);
-        } else {
-            LOG("Tiling not found for depth stencil attachment with format: %u", format);
-            throw std::runtime_error("Tiling not found");
-        }
+        aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         //VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     } else if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
 		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) {
-            tiling = VK_IMAGE_TILING_LINEAR;
-            LOG("Linear tiling found for color attachment with format: %u", format);
-        } else if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) {
-            tiling = VK_IMAGE_TILING_OPTIMAL;
-            LOG("Optimal tiling found for color attachment with format: %u", format);
-        } else {
-            LOG("Tiling not found for color attachment with format: %u", format);
-            throw std::runtime_error("Tiling not found");
-        }
     } else {
         throw std::runtime_error("Invalid usage for aspectMask");
     }
@@ -279,7 +299,7 @@ void GBuffer::createAttachment(
 	image.mipLevels = 1;
 	image.arrayLayers = 1;
 	image.samples = VK_SAMPLE_COUNT_1_BIT;
-	image.tiling = tiling;
+	image.tiling = getTiling(format, usage);
 	image.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	VkMemoryAllocateInfo memAlloc = {};
