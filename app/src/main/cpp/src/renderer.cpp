@@ -126,7 +126,7 @@ void Renderer::buildGBuffers(const Timer &timer, Camera &camera)
 	VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &beginInfo));
 
 
-    VkImageMemoryBarrier albedoBarrier = {};
+    /*VkImageMemoryBarrier albedoBarrier = {};
     albedoBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     albedoBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
     albedoBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -144,7 +144,7 @@ void Renderer::buildGBuffers(const Timer &timer, Camera &camera)
             0,
             0, nullptr,
             0, nullptr,
-            1, &albedoBarrier);
+            1, &albedoBarrier);*/
 
 	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 

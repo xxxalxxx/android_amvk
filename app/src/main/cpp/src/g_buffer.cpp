@@ -70,9 +70,9 @@ void GBuffer::createFramebuffers(const VkPhysicalDevice& physicalDevice, const V
 	createDepthAttachmentDesc(attDescs[INDEX_DEPTH], attFormats[INDEX_DEPTH]);
 
 	std::array<VkAttachmentReference, COLOR_ATTACHMENT_COUNT> colorRefs = {};
-	colorRefs[INDEX_POSITION] = { INDEX_POSITION, VK_IMAGE_LAYOUT_GENERAL };
-	colorRefs[INDEX_NORMAL]   = { INDEX_NORMAL, VK_IMAGE_LAYOUT_GENERAL };
-	colorRefs[INDEX_ALBEDO]   = { INDEX_ALBEDO, VK_IMAGE_LAYOUT_GENERAL };
+	colorRefs[INDEX_POSITION] = { INDEX_POSITION, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+	colorRefs[INDEX_NORMAL]   = { INDEX_NORMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+	colorRefs[INDEX_ALBEDO]   = { INDEX_ALBEDO, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 	VkAttachmentReference depthRef = { INDEX_DEPTH, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
 	VkSubpassDescription subpass = {};
