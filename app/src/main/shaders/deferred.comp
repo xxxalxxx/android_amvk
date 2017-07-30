@@ -3,7 +3,7 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_ARB_shader_image_load_store : enable
 
-#define WORK_GROUP_SIZE 32
+#define WORK_GROUP_SIZE 16
 #define MAX_LIGHTS 1024
 #define MAX_LIGHTS_PER_TILE 40
 
@@ -46,6 +46,7 @@ shared uint maxDepthInt;
 shared uint visiblePointLights[MAX_LIGHTS];
 shared uint visiblePointLightCount;
 
+
 void main() {
 
 	if (gl_LocalInvocationIndex == 0) {
@@ -56,11 +57,10 @@ void main() {
 
 	memoryBarrierShared();
 	barrier();
-	
-	ivec2 pixelPos = ivec2(gl_GlobalInvocationID.xy);
-    vec2 pixelPosF = vec2(pixelPos) / vec2(W, H);
 
-	vec4 normalDepth = vec4(0.0, 0.0, 0.0, 0.0);//imageLoad(imageNormalDepth, pixelPos);
+	ivec2 pixelPos = ivec2(gl_GlobalInvocationID.xy);
+
+	vec4 normalDepth = imageLoad(imageNormalDepth, pixelPos);
 	vec3 normal = vec3(normalDepth);
 	float depth = normalDepth.w;
     uint depthInt = TO_UINT(depth);
@@ -79,7 +79,5 @@ void main() {
 
 	vec4 albedoColor = imageLoad(imageAlbedo, pixelPos);
 	vec4 red = vec4(1.0, 0.0, 0.0, 1.0);
-	vec4 color = vec4(pixelPosF.y * pixelPosF.x);
-	imageStore(outImage, pixelPos, albedoColor);
+	imageStore(outImage, pixelPos, vec4(minDepth));
 }
-

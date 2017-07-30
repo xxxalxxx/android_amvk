@@ -10,7 +10,8 @@ ImageInfo* TextureManager::load(
 			State& state,
 			const VkCommandPool& cmdPool, 
 			const VkQueue& cmdQueue,
-			const TextureDesc& textureDesc)
+			const TextureDesc& textureDesc,
+			bool storage)
 {
 	TextureManager& tm = getInstance();
 	std::lock_guard<std::mutex> guard(tm.lock);
@@ -26,7 +27,7 @@ ImageInfo* TextureManager::load(
 
 	ImageInfo* info = new ImageInfo(state.device, textureData.width, textureData.height);
 	LOG("CREATE IMAGE INFO");
-	ImageHelper::createStagedImage(*info, textureData, state, cmdPool, cmdQueue);
+	ImageHelper::createStagedImage(*info, textureData, state, cmdPool, cmdQueue, storage);
 	LOG("IMAGE CREATED");
 	tm.mPool[textureDesc] = info;
 	return info;

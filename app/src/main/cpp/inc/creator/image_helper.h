@@ -323,7 +323,8 @@ inline void createStagedImage(
 		const TextureData& textureData,
 		State& state,
 		const VkCommandPool& cmdPool, 
-		const VkQueue& cmdQueue) 
+		const VkQueue& cmdQueue,
+		bool storage = false) 
  
 {
 	// Create staging image
@@ -346,12 +347,12 @@ inline void createStagedImage(
 			VK_FORMAT_R8G8B8A8_UNORM,
 			VK_IMAGE_TILING_OPTIMAL, 
 			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	// Setup memory barriers to transition images
 	{
-	CmdPass cmd(state.device, cmdPool, cmdQueue);
+	    CmdPass cmd(state.device, cmdPool, cmdQueue);
 
 		transitionLayout(
 				cmd.buffer,
@@ -363,7 +364,8 @@ inline void createStagedImage(
 				0,
 				VK_ACCESS_TRANSFER_READ_BIT);
 
-		transitionLayout(
+
+			transitionLayout(
 				cmd.buffer,
 				imageInfo.image,
 				VK_FORMAT_R8G8B8A8_UNORM,
@@ -373,11 +375,23 @@ inline void createStagedImage(
 				0,
 				VK_ACCESS_TRANSFER_WRITE_BIT);
 
-		// copy staging buffer to image
+			// copy staging buffer to image
 
 		copyImage(cmd.buffer, stagingDesc.image, imageInfo.image, imageInfo.width, imageInfo.height);
 
-		transitionLayout(
+		if (storage) {
+			transitionLayout(
+				cmd.buffer,
+				imageInfo.image,
+				VK_FORMAT_R8G8B8A8_UNORM, 
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_IMAGE_LAYOUT_GENERAL,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_ACCESS_SHADER_READ_BIT);
+
+		} else {
+			transitionLayout(
 				cmd.buffer,
 				imageInfo.image,
 				VK_FORMAT_R8G8B8A8_UNORM, 
@@ -386,7 +400,11 @@ inline void createStagedImage(
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_ACCESS_SHADER_READ_BIT);
-	}
+
+		
+		}
+
+    }
 //#endif
 
 	// Create ImageView

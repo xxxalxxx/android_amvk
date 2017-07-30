@@ -17,7 +17,8 @@ public:
 			State& state,
 			const VkCommandPool& cmdPool, 
 			const VkQueue& cmdQueue,
-			const TextureDesc& textureDesc);
+			const TextureDesc& textureDesc,
+			bool storage = false);
 	TextureManager(const TextureManager& textureManager) = delete;
 	void operator=(const TextureManager& textureManager) = delete;
 	virtual ~TextureManager();

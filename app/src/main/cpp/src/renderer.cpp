@@ -91,7 +91,7 @@ void Renderer::updateUniformBuffers(const Timer& timer, Camera& camera)
 	dwarf.update(cmd.buffer, timer, camera);
 	guard.update(cmd.buffer, timer, camera);
 	sceneLights.update(cmd.buffer, timer, camera);
-	gBuffer.update(cmd.buffer, timer, camera);
+	//gBuffer.update(cmd.buffer, timer, camera);
 
 	//CmdPass tilingCmd(mState.device, tiledRenderer.cmdPool, mState.computeQueue);
 	//gBuffer.updateTiling(tilingCmd.buffer, timer, camera);
@@ -115,6 +115,8 @@ void Renderer::buildGBuffers(const Timer &timer, Camera &camera)
 	renderPassBeginInfo.clearValueCount = clearValues.size();
 	renderPassBeginInfo.pClearValues = clearValues.data();
 
+
+
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	//beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -124,28 +126,29 @@ void Renderer::buildGBuffers(const Timer &timer, Camera &camera)
 	VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &beginInfo));
 
 
-
-
-	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-   /*VkImageMemoryBarrier albedoMemoryBarrier = {};
-    albedoMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    albedoMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    albedoMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    albedoMemoryBarrier.image = gBuffer.albedo().image;
-    albedoMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-    albedoMemoryBarrier.srcAccessMask = 0;
-    albedoMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    VkImageMemoryBarrier albedoBarrier = {};
+    albedoBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    albedoBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+    albedoBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+    albedoBarrier.image = gBuffer.albedo().image;
+    albedoBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+    albedoBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    albedoBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    albedoBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    albedoBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
     vkCmdPipelineBarrier(
             cmdBuffer,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
             0,
             0, nullptr,
             0, nullptr,
-            1, &albedoMemoryBarrier);
-*/
+            1, &albedoBarrier);
+
+	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+
 	VkViewport viewport = {};
 	viewport.width = (float) gBuffer.width;
 	viewport.height = (float) gBuffer.height;
@@ -166,15 +169,13 @@ void Renderer::buildGBuffers(const Timer &timer, Camera &camera)
 
 	vkCmdEndRenderPass(cmdBuffer);
 	VK_CHECK_RESULT(vkEndCommandBuffer(cmdBuffer));
-
-    LOG("DEPTH IMAGE %p", &gBuffer.depth().image);
 }
 
 void Renderer::buildComputeBuffers(const Timer &timer, Camera &camera)
 {
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	//beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 	VK_CHECK_RESULT(vkBeginCommandBuffer(gBuffer.tilingCmdBuffer, &beginInfo));
 
@@ -188,48 +189,40 @@ void Renderer::buildComputeBuffers(const Timer &timer, Camera &camera)
 	imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
 
 
-    VkImageMemoryBarrier albedoMemoryBarrier = {};
-    albedoMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    albedoMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-    albedoMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-    albedoMemoryBarrier.image = gBuffer.albedo().image;
-    albedoMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-    albedoMemoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    albedoMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    albedoMemoryBarrier.srcQueueFamilyIndex = mState.graphicsQueueIndex;
-    albedoMemoryBarrier.dstQueueFamilyIndex = mState.computeQueueIndex;
+    VkImageMemoryBarrier albedoBarrier = {};
+    albedoBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    albedoBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+    albedoBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+    albedoBarrier.image = gBuffer.albedo().image;
+    albedoBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+    albedoBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    albedoBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    albedoBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    albedoBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    vkCmdPipelineBarrier(
+            gBuffer.tilingCmdBuffer,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &albedoBarrier);
 
 	//imageMemoryBarrier.srcQueueFamilyIndex = mState.computeQueueIndex;
 	//imageMemoryBarrier.dstQueueFamilyIndex = mState.computeQueueIndex;
 
 	//imageMemoryBarrier.dstQueueFamilyIndex = mState.graphicsQueueIndex;
 
-
-	VkImageMemoryBarrier beforeDispatchBarriers[] = {
-		albedoMemoryBarrier
-	};
-
-	vkCmdPipelineBarrier(
-		gBuffer.tilingCmdBuffer,
-        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		0,
-		0, nullptr,
-		0, nullptr,
-		ARRAY_SIZE(beforeDispatchBarriers), beforeDispatchBarriers);
-
 	gBuffer.dispatch();
 
+    /*
 	VkImageMemoryBarrier afterDispatchBarriers[] = {
 		gBuffer.createTilingSrcBarrier(gBuffer.normal().image),
 		gBuffer.createTilingSrcBarrier(gBuffer.albedo().image)
 	};
-	
-	//imageMemoryBarrier.srcQueueFamilyIndex = mState.computeQueueIndex;
-	//imageMemoryBarrier.dstQueueFamilyIndex = mState.computeQueueIndex;
 
-
-	/*vkCmdPipelineBarrier(
+	vkCmdPipelineBarrier(
 		gBuffer.tilingCmdBuffer,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -239,8 +232,8 @@ void Renderer::buildComputeBuffers(const Timer &timer, Camera &camera)
 		0, 
 		nullptr,
 		ARRAY_SIZE(afterDispatchBarriers),
-		afterDispatchBarriers);*/
-
+		afterDispatchBarriers);
+*/
 	VK_CHECK_RESULT(vkEndCommandBuffer(gBuffer.tilingCmdBuffer));
 
 }
@@ -256,7 +249,7 @@ void Renderer::buildCommandBuffers(const Timer &timer, Camera &camera)
 
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	//beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -271,13 +264,13 @@ void Renderer::buildCommandBuffers(const Timer &timer, Camera &camera)
 		VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &beginInfo));
 
 		
-		VkImageMemoryBarrier imageMemoryBarrier = {};
+		/*VkImageMemoryBarrier imageMemoryBarrier = {};
 		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
 		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		imageMemoryBarrier.image = gBuffer.tilingImage.image;
 		imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		imageMemoryBarrier.srcAccessMask = 0;
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		imageMemoryBarrier.srcQueueFamilyIndex = mState.computeQueueIndex;
 		imageMemoryBarrier.dstQueueFamilyIndex = mState.graphicsQueueIndex;
@@ -290,13 +283,9 @@ void Renderer::buildCommandBuffers(const Timer &timer, Camera &camera)
 			0, nullptr,
 			0, nullptr,
 			1, &imageMemoryBarrier);
+		*/
 		
-		
-		VkImageSubresourceLayers subres = {};
-		subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subres.mipLevel = 0;
-		subres.baseArrayLayer = 0;
-		subres.layerCount = 1;
+		VkImageSubresourceLayers subres = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 
 		VkImageBlit blit = {};
 		blit.srcSubresource = subres;
@@ -315,6 +304,7 @@ void Renderer::buildCommandBuffers(const Timer &timer, Camera &camera)
 				1,
 				&blit,
 				VK_FILTER_NEAREST);
+
 	/*	
 		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
 		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -411,7 +401,7 @@ void Renderer::draw()
 {
 	VkResult result = vkAcquireNextImageKHR(mState.device,
                                             mState.swapChain,
-                                            std::numeric_limits<uint64_t>::max(),
+                                            UINT64_MAX,
                                             imageAquiredSemaphore,
                                             VK_NULL_HANDLE,
                                             &imageIndex);
@@ -424,10 +414,11 @@ void Renderer::draw()
 		VK_THROW_RESULT_ERROR("Failed vkAcquireNextImageKHR", result);
 		return;
 	}
-		
-		//vkWaitForFences(mState.device, 1, &tilingFence, VK_TRUE, UINT64_MAX);
-    //vkResetFences(mState.device, 1, &tilingFence);
-    static uint32_t cnt = 0;
+
+	//LOG("CNT %u", cnt++);
+
+	vkWaitForFences(mState.device, 1, &tilingFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(mState.device, 1, &tilingFence);
 
 	VkPipelineStageFlags stageFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkPipelineStageFlags tilingFlags[] = { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT };
@@ -436,44 +427,7 @@ void Renderer::draw()
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-
-    if (cnt == 0) {
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &imageAquiredSemaphore;
-        submitInfo.pWaitDstStageMask = stageFlags;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &gBuffer.cmdBuffer;
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &offscreenSemaphore;
-
-        VK_CHECK_RESULT(vkQueueSubmit(mState.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
-
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &offscreenSemaphore;
-        submitInfo.pWaitDstStageMask = stageFlags;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &gBuffer.tilingCmdBuffer;
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &tilingFinishedSemaphore;
-
-        VK_CHECK_RESULT(vkQueueSubmit(mState.computeQueue, 1, &submitInfo, VK_NULL_HANDLE));
-
-    } else {
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &imageAquiredSemaphore;
-        submitInfo.pWaitDstStageMask = stageFlags;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &gBuffer.tilingCmdBuffer;
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &tilingFinishedSemaphore;
-
-        VK_CHECK_RESULT(vkQueueSubmit(mState.computeQueue, 1, &submitInfo, VK_NULL_HANDLE));
-
-    }
-
-/*
-
-    submitInfo.waitSemaphoreCount = 1;
+	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &imageAquiredSemaphore;
 	submitInfo.pWaitDstStageMask = stageFlags;
 	submitInfo.commandBufferCount = 1;
@@ -481,7 +435,7 @@ void Renderer::draw()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &offscreenSemaphore;
 
-	VK_CHECK_RESULT(vkQueueSubmit(mState.graphicsQueue, 1, &submitInfo, tilingFence));
+	VK_CHECK_RESULT(vkQueueSubmit(mState.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &offscreenSemaphore;
@@ -491,8 +445,7 @@ void Renderer::draw()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &tilingFinishedSemaphore;
 
-	VK_CHECK_RESULT(vkQueueSubmit(mState.computeQueue, 1, &submitInfo, VK_NULL_HANDLE));
- */
+	VK_CHECK_RESULT(vkQueueSubmit(mState.computeQueue, 1, &submitInfo, tilingFence));
 
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &tilingFinishedSemaphore;
@@ -513,7 +466,6 @@ void Renderer::draw()
 	presentInfo.pImageIndices = &imageIndex;
 
 	VK_CHECK_RESULT(vkQueuePresentKHR(mState.presentQueue, &presentInfo));
-++cnt;
 }
 
 void Renderer::createSemaphores()

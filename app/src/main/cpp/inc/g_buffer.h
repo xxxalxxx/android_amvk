@@ -35,7 +35,7 @@ public:
 
 
 	static const constexpr uint32_t MAX_LIGHTS = 1024;
-	static const constexpr uint32_t WORK_GROUP_SIZE = 32;
+	static const constexpr uint32_t WORK_GROUP_SIZE = 16;
 
 	struct TilingUBO {
 		glm::mat4 view;
@@ -108,6 +108,8 @@ private:
 	void createDescriptors();
 	void createColorAttachmentDesc(VkAttachmentDescription& desc, VkFormat format);
 	void createDepthAttachmentDesc(VkAttachmentDescription& desc, VkFormat format);
+
+	void initColorImageTransition(CmdPass& cmd, FramebufferAttachment& attachment);
 
 	State* mState;
 	VkDescriptorPool mDescriptorPool;

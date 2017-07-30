@@ -31,7 +31,6 @@ private:
 	void createDescriptorSets();
 	State& mState;
 
-
 };
 
 #endif

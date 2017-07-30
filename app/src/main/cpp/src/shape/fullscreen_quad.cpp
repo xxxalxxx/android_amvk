@@ -15,7 +15,8 @@ void FullscreenQuad::init()
             mState,
             mState.commandPool,
             mState.graphicsQueue,
-			textureDesc);
+			textureDesc,
+			true);
 	createDescriptorSets();
 }
 
