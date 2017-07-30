@@ -236,32 +236,40 @@ void GBuffer::createAttachment(
 		VkImageUsageFlags usage)
 {
     VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(mState->physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, &formatProperties);
-
-    if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) {
-        LOG("PROP TILING SUPPORTED");
-    } else {
-        LOG("PROP TILING UNSUPPORTED");
-    }
-
-
-    if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT) {
-        LOG("PROP BLIT SUPPORTED");
-    } else {
-        LOG("PROP BLIT UNSUPPORTED");
-    }
-
+    vkGetPhysicalDeviceFormatProperties(mState->physicalDevice, format, &formatProperties);
+    VkImageTiling tiling;
 	VkImageAspectFlags aspectMask = 0;
 
-	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+    if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+        aspectMask =
+                VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            tiling = VK_IMAGE_TILING_OPTIMAL;
+            LOG("Optimal tiling found for depth stencil attachment with format: %u", format);
+        } else if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            tiling = VK_IMAGE_TILING_LINEAR;
+            LOG("Linear tiling found for depth stencil attachment with format: %u", format);
+        } else {
+            LOG("Tiling not found for depth stencil attachment with format: %u", format);
+            throw std::runtime_error("Tiling not found");
+        }
+        //VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    } else if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
 		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-		aspectMask = 
-			VK_IMAGE_ASPECT_DEPTH_BIT;
-			//VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 
-	if (aspectMask == 0)
-		throw std::runtime_error("Invalid usage for aspectMask");
+        if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) {
+            tiling = VK_IMAGE_TILING_LINEAR;
+            LOG("Linear tiling found for color attachment with format: %u", format);
+        } else if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) {
+            tiling = VK_IMAGE_TILING_OPTIMAL;
+            LOG("Optimal tiling found for color attachment with format: %u", format);
+        } else {
+            LOG("Tiling not found for color attachment with format: %u", format);
+            throw std::runtime_error("Tiling not found");
+        }
+    } else {
+        throw std::runtime_error("Invalid usage for aspectMask");
+    }
 
 	VkImageCreateInfo image = {};
 	image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -271,7 +279,7 @@ void GBuffer::createAttachment(
 	image.mipLevels = 1;
 	image.arrayLayers = 1;
 	image.samples = VK_SAMPLE_COUNT_1_BIT;
-	image.tiling = VK_IMAGE_TILING_LINEAR;
+	image.tiling = tiling;
 	image.usage = usage | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	VkMemoryAllocateInfo memAlloc = {};
